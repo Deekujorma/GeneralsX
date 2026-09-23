@@ -346,6 +346,9 @@ public:
 	MappableKeyCategories		m_category;				///< This is the category the key falls under
 	UnicodeString						m_description;		///< The description string for the keys
 	UnicodeString						m_displayName;		///< The display name of our command
+	// GeneralsX @feature OpenAI 23/09/2026 Preserve immutable defaults separately from user overrides.
+	MappableKeyType					m_defaultKey;
+	MappableKeyModState			m_defaultModState;
 };
 EMPTY_DTOR(MetaMapRec)
 
@@ -383,6 +386,7 @@ private:
 protected:
 	GameMessage::Type findGameMessageMetaType(const char* name);
 	MetaMapRec *getMetaMapRec(GameMessage::Type t);
+	const char *getMetaName(GameMessage::Type t) const;
 
 public:
 
@@ -400,6 +404,15 @@ public:
 	void generateMetaMap();
 
 	void verifyMetaMap();
+
+	// GeneralsX @feature OpenAI 23/09/2026 Share binding persistence and conflict handling between both games.
+	void initializeUserBindings();
+	Bool setBinding(GameMessage::Type type, MappableKeyType key, MappableKeyModState modifiers, Bool replaceConflict);
+	const MetaMapRec *findConflict(GameMessage::Type type, MappableKeyType key, MappableKeyModState modifiers) const;
+	void resetBinding(GameMessage::Type type);
+	void resetAllBindings();
+	Bool saveUserBindings() const;
+	MetaMapRec *getMutableMetaMapRec(GameMessage::Type type) { return getMetaMapRec(type); }
 
 	const MetaMapRec *getFirstMetaMapRec() const { return m_metaMaps; }
 };

@@ -597,6 +597,8 @@ void GameEngine::init()
 #endif
 
 		TheMetaMap->generateMetaMap();
+		// GeneralsX @feature OpenAI 23/09/2026 Apply writable per-user bindings after retail and generated defaults.
+		TheMetaMap->initializeUserBindings();
 		TheMetaMap->verifyMetaMap();
 
 		initSubsystem(TheActionManager,"TheActionManager", MSGNEW("GameEngineSubsystem") ActionManager(), nullptr);
@@ -1181,4 +1183,3 @@ extern const Bool TheSystemIsUnicode = (((void*) (::MessageBox)) == ((void*) (::
 #else
 extern const Bool TheSystemIsUnicode = true;  // Linux: Always Unicode (UTF-8)
 #endif
-

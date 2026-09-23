@@ -33,6 +33,7 @@
 #include "Common/GameUtility.h"
 #include "Common/INI.h"
 #include "Common/MessageStream.h"
+#include "Common/UserPreferences.h"
 #include "Common/Player.h"
 #include "Common/PlayerList.h"
 #include "Common/Team.h"
@@ -183,6 +184,11 @@ static const LookupListRec GameMessageMetaTypeNames[] =
 	{ "BEGIN_CAMERA_ZOOM_OUT",										GameMessage::MSG_META_BEGIN_CAMERA_ZOOM_OUT },
 	{ "END_CAMERA_ZOOM_OUT",											GameMessage::MSG_META_END_CAMERA_ZOOM_OUT },
 	{ "CAMERA_RESET",															GameMessage::MSG_META_CAMERA_RESET },
+	// GeneralsX @feature OpenAI 23/09/2026 Expose held camera panning through MetaMap.
+	{ "CAMERA_PAN_UP", GameMessage::MSG_META_CAMERA_PAN_UP },
+	{ "CAMERA_PAN_DOWN", GameMessage::MSG_META_CAMERA_PAN_DOWN },
+	{ "CAMERA_PAN_LEFT", GameMessage::MSG_META_CAMERA_PAN_LEFT },
+	{ "CAMERA_PAN_RIGHT", GameMessage::MSG_META_CAMERA_PAN_RIGHT },
 #ifdef RTS_ZEROHOUR
 	{ "TOGGLE_CAMERA_TRACKING_DRAWABLE",					GameMessage::MSG_META_TOGGLE_CAMERA_TRACKING_DRAWABLE },
 #endif
@@ -552,6 +558,21 @@ void MetaEventTranslator::onKeyEvent(const GameMessage *msg, GameMessageDisposit
 	const Int systemKeyState = msg->getArgument(1)->integer;
 
 	const MappableKeyType key = (MappableKeyType)systemKey;
+	// GeneralsX @bugfix OpenAI 23/09/2026 Match pan releases by physical key so modifier changes cannot stick scrolling.
+	if (msg->getType() == GameMessage::MSG_RAW_KEY_UP)
+	{
+		for (const MetaMapRec *held = TheMetaMap->getFirstMetaMapRec(); held; held = held->m_next)
+		{
+			if (held->m_key == key && held->m_meta >= GameMessage::MSG_META_CAMERA_PAN_UP && held->m_meta <= GameMessage::MSG_META_CAMERA_PAN_RIGHT)
+			{
+				GameMessage *pan = TheMessageStream->appendMessage(held->m_meta);
+				pan->appendIntegerArgument(FALSE);
+				disp = DESTROY_MESSAGE;
+			}
+		}
+		if (disp == DESTROY_MESSAGE)
+			return;
+	}
 
 	// for our purposes here, we don't care to distinguish between right and left keys,
 	// so just fudge a little to simplify things.
@@ -637,7 +658,9 @@ void MetaEventTranslator::onKeyEvent(const GameMessage *msg, GameMessageDisposit
 	      }
 
 
-				/*GameMessage *metaMsg =*/ TheMessageStream->appendMessage(map->m_meta);
+				GameMessage *metaMsg = TheMessageStream->appendMessage(map->m_meta);
+				if (map->m_meta >= GameMessage::MSG_META_CAMERA_PAN_UP && map->m_meta <= GameMessage::MSG_META_CAMERA_PAN_RIGHT)
+					metaMsg->appendIntegerArgument(TRUE);
 				//DEBUG_LOG(("Frame %d: MetaEventTranslator::translateGameMessage() normal: %s", TheGameLogic->getFrame(), findGameMessageNameByType(map->m_meta)));
 			}
 			disp = DESTROY_MESSAGE;
@@ -718,10 +741,20 @@ MetaMapRec *MetaMap::getMetaMapRec(GameMessage::Type t)
 	m->m_category = CATEGORY_MISC;
 	m->m_description.clear();
 	m->m_displayName.clear();
+	m->m_defaultKey = MK_NONE;
+	m->m_defaultModState = NONE;
 	m->m_next = m_metaMaps;
 	m_metaMaps = m;
 
 	return m;
+}
+
+const char *MetaMap::getMetaName(GameMessage::Type type) const
+{
+	for (const LookupListRec *name = GameMessageMetaTypeNames; name->name; ++name)
+		if (name->value == type)
+			return name->name;
+	return nullptr;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -746,6 +779,29 @@ void MetaMap::generateMetaMap()
 {
 	// TheSuperHackers @info A default mapping for MSG_META_SELECT_ALL_AIRCRAFT would be useful for Generals
 	// but is not recommended, because it will cause key mapping conflicts with original game languages.
+
+	// GeneralsX @feature OpenAI 23/09/2026 Preserve retail arrow scrolling as configurable logical actions.
+	const GameMessage::Type panTypes[] = { GameMessage::MSG_META_CAMERA_PAN_UP, GameMessage::MSG_META_CAMERA_PAN_DOWN,
+		GameMessage::MSG_META_CAMERA_PAN_LEFT, GameMessage::MSG_META_CAMERA_PAN_RIGHT };
+	const MappableKeyType panKeys[] = { MK_UP, MK_DOWN, MK_LEFT, MK_RIGHT };
+	const WideChar *panNames[] = { L"Camera Pan Up", L"Camera Pan Down", L"Camera Pan Left", L"Camera Pan Right" };
+	for (Int i = 0; i < 4; ++i)
+	{
+		MetaMapRec *map = getMetaMapRec(panTypes[i]);
+		if (map->m_key == MK_NONE)
+		{
+			map->m_key = panKeys[i];
+			map->m_transition = DOWN;
+			map->m_modState = NONE;
+			map->m_usableIn = COMMANDUSABLE_GAME;
+			map->m_category = CATEGORY_INTERFACE;
+		}
+		if (map->m_displayName.isEmpty())
+		{
+			map->m_displayName = panNames[i];
+			map->m_description = panNames[i];
+		}
+	}
 
 	{
 		// Is useful for Generals and Zero Hour.
@@ -957,6 +1013,134 @@ void MetaMap::generateMetaMap()
 #endif // defined(RTS_DEBUG)
 }
 
+static Int lookupValue(const LookupListRec *list, const char *name, Int fallback)
+{
+	for (; list->name; ++list)
+		if (stricmp(list->name, name) == 0)
+			return list->value;
+	return fallback;
+}
+
+static const char *lookupName(const LookupListRec *list, Int value)
+{
+	for (; list->name; ++list)
+		if (list->value == value)
+			return list->name;
+	return nullptr;
+}
+
+void MetaMap::initializeUserBindings()
+{
+	// GeneralsX @feature OpenAI 23/09/2026 Snapshot effective mod/retail defaults before applying per-user overrides.
+	for (MetaMapRec *map = m_metaMaps; map; map = map->m_next)
+	{
+		map->m_defaultKey = map->m_key;
+		map->m_defaultModState = map->m_modState;
+	}
+
+	UserPreferences preferences;
+	if (!preferences.load("KeyBindings.ini"))
+		return;
+	for (UserPreferences::const_iterator entry = preferences.begin(); entry != preferences.end(); ++entry)
+	{
+		GameMessage::Type type = GameMessage::MSG_INVALID;
+		for (const LookupListRec *name = GameMessageMetaTypeNames; name->name; ++name)
+			if (stricmp(name->name, entry->first.str()) == 0)
+				type = (GameMessage::Type)name->value;
+		if (type == GameMessage::MSG_INVALID)
+			continue;
+		AsciiString value = entry->second;
+		AsciiString keyName;
+		value.nextToken(&keyName, ",");
+		const char *comma = strchr(value.str(), ',');
+		if (!comma)
+			continue;
+		AsciiString modifierName = comma + 1;
+		keyName.trim();
+		modifierName.trim();
+		Int key = lookupValue(KeyNames, keyName.str(), -1);
+		Int modifiers = lookupValue(ModifierNames, modifierName.str(), -1);
+		if (key < 0 || modifiers < 0)
+			continue;
+		MetaMapRec *map = getMetaMapRec(type);
+		map->m_key = (MappableKeyType)key;
+		map->m_modState = (MappableKeyModState)modifiers;
+	}
+}
+
+const MetaMapRec *MetaMap::findConflict(GameMessage::Type type, MappableKeyType key, MappableKeyModState modifiers) const
+{
+	if (key == MK_NONE)
+		return nullptr;
+	const MetaMapRec *target = nullptr;
+	for (const MetaMapRec *map = m_metaMaps; map; map = map->m_next)
+		if (map->m_meta == type)
+			target = map;
+	if (!target)
+		return nullptr;
+	for (const MetaMapRec *map = m_metaMaps; map; map = map->m_next)
+		if (map != target && map->m_transition == target->m_transition && map->m_key == key && map->m_modState == modifiers && (map->m_usableIn & target->m_usableIn))
+			return map;
+	return nullptr;
+}
+
+Bool MetaMap::setBinding(GameMessage::Type type, MappableKeyType key, MappableKeyModState modifiers, Bool replaceConflict)
+{
+	MetaMapRec *map = getMetaMapRec(type);
+	const MetaMapRec *conflict = findConflict(type, key, modifiers);
+	if (conflict && !replaceConflict)
+		return false;
+	if (conflict)
+	{
+		for (MetaMapRec *other = m_metaMaps; other; other = other->m_next)
+			if (other != map && other->m_transition == map->m_transition && other->m_key == key && other->m_modState == modifiers && (other->m_usableIn & map->m_usableIn))
+				other->m_key = MK_NONE;
+	}
+	map->m_key = key;
+	map->m_modState = modifiers;
+	return saveUserBindings();
+}
+
+void MetaMap::resetBinding(GameMessage::Type type)
+{
+	MetaMapRec *map = getMetaMapRec(type);
+	map->m_key = map->m_defaultKey;
+	map->m_modState = map->m_defaultModState;
+	saveUserBindings();
+}
+
+void MetaMap::resetAllBindings()
+{
+	for (MetaMapRec *map = m_metaMaps; map; map = map->m_next)
+	{
+		map->m_key = map->m_defaultKey;
+		map->m_modState = map->m_defaultModState;
+	}
+	saveUserBindings();
+}
+
+Bool MetaMap::saveUserBindings() const
+{
+	UserPreferences preferences;
+	preferences.load("KeyBindings.ini");
+	preferences.clear();
+	for (const MetaMapRec *map = m_metaMaps; map; map = map->m_next)
+	{
+		if (map->m_key == map->m_defaultKey && map->m_modState == map->m_defaultModState)
+			continue;
+		const char *action = getMetaName(map->m_meta);
+		const char *key = lookupName(KeyNames, map->m_key);
+		const char *modifiers = lookupName(ModifierNames, map->m_modState);
+		if (action && key && modifiers)
+		{
+			AsciiString value;
+			value.format("%s,%s", key, modifiers);
+			preferences.setAsciiString(action, value);
+		}
+	}
+	return preferences.write();
+}
+
 //-------------------------------------------------------------------------------------------------
 void MetaMap::verifyMetaMap()
 {
@@ -976,4 +1160,3 @@ void MetaMap::verifyMetaMap()
 {
 	MetaMap::parseMetaMap(ini);
 }
-

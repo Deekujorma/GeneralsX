@@ -49,6 +49,8 @@ public:
 	virtual ~LookAtTranslator() override;
 
 	virtual GameMessageDisposition translateGameMessage(const GameMessage *msg) override;
+	// GeneralsX @feature OpenAI 23/09/2026 Clear held keys at gameplay/input boundaries.
+	void clearKeyboardScroll();
 	virtual const ICoord2D* getRMBScrollAnchor(); // get m_anchor ICoord2D if we're RMB scrolling
 	Bool hasMouseMovedRecently();
 	void setCurrentPos( const ICoord2D& pos );

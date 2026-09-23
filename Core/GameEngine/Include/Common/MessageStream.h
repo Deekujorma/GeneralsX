@@ -272,6 +272,11 @@ public:
 		MSG_META_BEGIN_CAMERA_ZOOM_OUT,
 		MSG_META_END_CAMERA_ZOOM_OUT,
 		MSG_META_CAMERA_RESET,
+		// GeneralsX @feature OpenAI 23/09/2026 Add logical held camera-pan actions.
+		MSG_META_CAMERA_PAN_UP,
+		MSG_META_CAMERA_PAN_DOWN,
+		MSG_META_CAMERA_PAN_LEFT,
+		MSG_META_CAMERA_PAN_RIGHT,
     MSG_META_TOGGLE_CAMERA_TRACKING_DRAWABLE,
 		MSG_META_TOGGLE_FAST_FORWARD_REPLAY,				///< Toggle the fast forward feature
 		MSG_META_TOGGLE_PAUSE,											///< TheSuperHackers @feature Toggle game pause
