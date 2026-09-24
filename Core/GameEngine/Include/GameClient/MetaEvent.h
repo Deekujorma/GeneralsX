@@ -382,6 +382,11 @@ class MetaMap : public SubsystemInterface
 
 private:
 	MetaMapRec *m_metaMaps;
+	MetaMapRec *getLogicalPartner(const MetaMapRec *map);
+	const MetaMapRec *getLogicalPartner(const MetaMapRec *map) const;
+	MetaMapRec *getLogicalRepresentative(MetaMapRec *map);
+	const MetaMapRec *getLogicalRepresentative(const MetaMapRec *map) const;
+	Bool applyBinding(GameMessage::Type type, MappableKeyType key, MappableKeyModState modifiers, Bool replaceConflict);
 
 protected:
 	GameMessage::Type findGameMessageMetaType(const char* name);
@@ -413,6 +418,7 @@ public:
 	void resetAllBindings();
 	Bool saveUserBindings() const;
 	MetaMapRec *getMutableMetaMapRec(GameMessage::Type type) { return getMetaMapRec(type); }
+	Bool isLogicalRepresentative(const MetaMapRec *map) const { return getLogicalRepresentative(map) == map; }
 
 	const MetaMapRec *getFirstMetaMapRec() const { return m_metaMaps; }
 };
