@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 META = (ROOT / "Core/GameEngine/Source/GameClient/MessageStream/MetaEvent.cpp").read_text()
 LOOK = (ROOT / "Core/GameEngine/Source/GameClient/MessageStream/LookAtXlat.cpp").read_text()
 HEADER = (ROOT / "Core/GameEngine/Include/GameClient/MetaEvent.h").read_text()
+LAYOUT = (ROOT / "GeneralsZH/Data/Window/Menus/KeyboardOptionsMenu.wnd").read_text()
 
 
 class KeyBindingIntegrationTests(unittest.TestCase):
@@ -73,6 +74,39 @@ class KeyBindingIntegrationTests(unittest.TestCase):
         zh = (ROOT / "GeneralsMD/Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/KeyboardOptionsMenu.cpp").read_text()
         base = base.replace("Command & Conquer Generals(tm)", "Command & Conquer Generals Zero Hour(tm)")
         self.assertEqual(base, zh)
+
+    def test_generalsx_keyboard_layout_contains_callback_contract(self):
+        for callback in (
+            "KeyboardOptionsMenuInit",
+            "KeyboardOptionsMenuUpdate",
+            "KeyboardOptionsMenuShutdown",
+            "KeyboardOptionsMenuSystem",
+            "KeyboardOptionsMenuInput",
+        ):
+            self.assertIn(callback, LAYOUT)
+        for control in (
+            "ParentKeyboardOptionsMenu",
+            "ButtonBack",
+            "ComboBoxCategoryList",
+            "ListBoxCommandList",
+            "StaticTextDescription",
+            "StaticTextCurrentHotkey",
+            "TextEntryAssignHotkey",
+            "ButtonAssign",
+            "ButtonResetAll",
+        ):
+            self.assertEqual(LAYOUT.count(f'NAME = "KeyboardOptionsMenu.wnd:{control}";'), 1)
+        lines = [line.strip() for line in LAYOUT.splitlines()]
+        self.assertEqual(lines.count("WINDOW"), lines.count("END"))
+
+    def test_zero_hour_options_button_and_packaging_are_wired(self):
+        options = (ROOT / "GeneralsMD/Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/OptionsMenu.cpp").read_text()
+        self.assertIn("createKeyboardOptionsButton(parent)", options)
+        self.assertIn('OptionsMenu.wnd:ButtonKeyboardOptions', options)
+        self.assertIn('TheShell->push( "Menus/KeyboardOptionsMenu.wnd" )', options)
+        for deploy in ("scripts/build/linux/deploy-linux-zh.sh", "scripts/build/macos/deploy-macos-zh.sh"):
+            self.assertIn("ExtrasMenu KeyboardOptionsMenu", (ROOT / deploy).read_text())
+        self.assertIn("KeyboardOptionsMenu.wnd", (ROOT / "flatpak/com.fbraz3.GeneralsXZH.yml").read_text())
 
 
 if __name__ == "__main__":

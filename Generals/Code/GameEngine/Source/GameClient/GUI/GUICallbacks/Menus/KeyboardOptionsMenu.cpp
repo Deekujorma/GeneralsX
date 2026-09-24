@@ -252,6 +252,25 @@ void KeyboardOptionsMenuInit(WindowLayout *layout, void *)
 	s_current = TheWindowManager->winGetWindowFromId(nullptr, TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:StaticTextCurrentHotkey"));
 	s_capture = TheWindowManager->winGetWindowFromId(nullptr, TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:TextEntryAssignHotkey"));
 	s_capture->winSetInputFunc(KeyboardTextEntryInput);
+	// GeneralsX @feature OpenAI 24/09/2026 Localize the GeneralsX-owned layout with safe English fallbacks.
+	GadgetStaticTextSetText(TheWindowManager->winGetWindowFromId(nullptr,
+		TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:LabelTitle")),
+		TheGameText->FETCH_OR_SUBSTITUTE("GUI:KeyboardControls", L"Keyboard Controls"));
+	GadgetStaticTextSetText(TheWindowManager->winGetWindowFromId(nullptr,
+		TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:LabelCategory")),
+		TheGameText->FETCH_OR_SUBSTITUTE("GUI:Category", L"Category"));
+	GadgetStaticTextSetText(TheWindowManager->winGetWindowFromId(nullptr,
+		TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:LabelCurrentHotkey")),
+		TheGameText->FETCH_OR_SUBSTITUTE("GUI:CurrentHotkey", L"Current Binding"));
+	GadgetStaticTextSetText(TheWindowManager->winGetWindowFromId(nullptr,
+		TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:LabelAssignHotkey")),
+		TheGameText->FETCH_OR_SUBSTITUTE("GUI:NewHotkey", L"New Binding"));
+	GadgetButtonSetText(TheWindowManager->winGetWindowFromId(nullptr, s_assignID),
+		TheGameText->FETCH_OR_SUBSTITUTE("GUI:Assign", L"Assign"));
+	GadgetButtonSetText(TheWindowManager->winGetWindowFromId(nullptr, s_resetAllID),
+		TheGameText->FETCH_OR_SUBSTITUTE("GUI:ResetAll", L"Reset All"));
+	GadgetButtonSetText(TheWindowManager->winGetWindowFromId(nullptr, s_backID),
+		TheGameText->FETCH_OR_SUBSTITUTE("GUI:Back", L"Back"));
 	clearPendingCapture();
 	s_suppressEscapeUp = false;
 	GadgetComboBoxReset(s_category);

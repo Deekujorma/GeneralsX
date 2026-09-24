@@ -6,7 +6,7 @@ Validate both Generals and Zero Hour on Linux, Linux Flatpak, macOS, and Windows
 
 ## Matrix
 
-1. Confirm a clean install pans with Up, Down, Left, and Right Arrow.
+1. Open the retail Options screen, confirm the injected Keyboard Controls button is visible, open the GeneralsX keyboard layout, then confirm a clean install pans with Up, Down, Left, and Right Arrow.
 2. Rebind Camera Pan Up/Left/Down/Right to W/A/S/D in Keyboard Options, accepting conflicts when prompted.
 3. Hold and release each direction repeatedly, including rapid press/release cycles.
 4. Verify W+A, W+D, S+A, and S+D diagonal scrolling.

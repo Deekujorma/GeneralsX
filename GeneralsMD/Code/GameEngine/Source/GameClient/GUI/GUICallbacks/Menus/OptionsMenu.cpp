@@ -53,6 +53,7 @@
 #include "GameClient/GadgetTextEntry.h"
 #include "GameClient/GadgetComboBox.h"
 #include "GameClient/GadgetRadioButton.h"
+#include "GameClient/GadgetPushButton.h"
 #include "GameClient/GadgetSlider.h"
 #include "GameClient/HeaderTemplate.h"
 #include "GameClient/Shell.h"
@@ -937,6 +938,47 @@ static void initLabelVersion()
 	}
 }
 
+// GeneralsX @feature OpenAI 24/09/2026 Add the keyboard-controls entry without replacing the retail Options layout.
+static GameWindow *createKeyboardOptionsButton(GameWindow *parent)
+{
+	if (!parent)
+		return nullptr;
+	const NameKeyType buttonID = TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonKeyboardOptions");
+	GameWindow *button = TheWindowManager->winGetWindowFromId(parent, buttonID);
+	if (button)
+		return button;
+
+	GameWindow *anchor = TheWindowManager->winGetWindowFromId(parent,
+		TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonDefaults"));
+	Int x = 20;
+	Int y = 540;
+	Int width = 150;
+	Int height = 26;
+	if (anchor)
+	{
+		anchor->winGetPosition(&x, &y);
+		anchor->winGetSize(&width, &height);
+		x -= width + 10;
+		if (x < 10)
+			x = 10;
+	}
+
+	WinInstanceData instanceData;
+	instanceData.init();
+	BitSet(instanceData.m_style, GWS_PUSH_BUTTON | GWS_MOUSE_TRACK);
+	instanceData.m_decoratedNameString = "OptionsMenu.wnd:ButtonKeyboardOptions";
+	instanceData.m_textLabelString = "GUI:KeyboardControls";
+	button = TheWindowManager->gogoGadgetPushButton(parent, WIN_STATUS_ENABLED | WIN_STATUS_IMAGE | WIN_STATUS_TAB_STOP,
+		x, y, width, height, &instanceData, nullptr, TRUE);
+	if (button)
+	{
+		button->winSetWindowId(buttonID);
+		GadgetButtonSetText(button,
+			TheGameText->FETCH_OR_SUBSTITUTE("GUI:KeyboardControls", L"Keyboard Controls"));
+	}
+	return button;
+}
+
 //-------------------------------------------------------------------------------------------------
 /** Initialize the options menu */
 //-------------------------------------------------------------------------------------------------
@@ -1399,6 +1441,7 @@ void OptionsMenuInit( WindowLayout *layout, void *userData )
 	// set keyboard focus to main parent
 	NameKeyType parentID = TheNameKeyGenerator->nameToKey( "OptionsMenu.wnd:OptionsMenuParent" );
 	GameWindow *parent = TheWindowManager->winGetWindowFromId( nullptr, parentID );
+	createKeyboardOptionsButton(parent);
 	TheWindowManager->winSetFocus( parent );
 
 	// GeneralsX @bugfix fbraz3 12/09/2026 TheGameSpyInfo is a persistent singleton in GeneralsX,
