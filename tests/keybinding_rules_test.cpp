@@ -20,6 +20,8 @@ int main()
 	assert(!SplitOverride("KEY_W", separator));
 	assert(!SplitOverride(",SHIFT", separator));
 	assert(!SplitOverride("KEY_W,SHIFT,ALT", separator));
+	assert(NormalizeModifiersForKey(0, 0, 4) == 0);
+	assert(NormalizeModifiersForKey(1, 0, 4) == 4);
 
 	HeldCameraPanState pan;
 	assert(!pan.any());
@@ -32,6 +34,16 @@ int main()
 	assert(pan.vertical() == 1);
 	pan.clear();
 	assert(!pan.any());
+
+	ActiveCameraPanBindings activePans;
+	activePans.activate(0, 17); // bare W camera pan
+	assert(activePans.releasePhysicalKey(18) == 0); // unrelated key cannot release it
+	assert(activePans.releasePhysicalKey(17) == 1U);
+	assert(!activePans.isActive(0));
+	activePans.activate(0, 17);
+	activePans.activate(1, 17); // same physical key with different configured modifiers
+	assert(activePans.releasePhysicalKey(17) == (1U | 2U));
+	assert(!activePans.isActive(0) && !activePans.isActive(1));
 
 	std::cout << "keybinding rules tests passed\n";
 	return 0;

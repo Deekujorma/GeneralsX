@@ -29,6 +29,7 @@
 
 #include "Common/SubsystemInterface.h"
 #include "GameClient/InGameUI.h"
+#include "GameClient/KeyBindingRules.h"
 
 
 enum MappableKeyCategories CPP_11(: Int)
@@ -360,6 +361,8 @@ private:
 
 	Int						m_lastKeyDown;	// really a MappableKeyType
 	Int						m_lastModState;	// really a MappableKeyModState
+	// GeneralsX @bugfix OpenAI 24/09/2026 Release only camera actions that were actually pressed.
+	ActiveCameraPanBindings m_activeCameraPans;
 
 	enum { NUM_MOUSE_BUTTONS = 3 };
 	ICoord2D m_mouseDownPosition[NUM_MOUSE_BUTTONS];

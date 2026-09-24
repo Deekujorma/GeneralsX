@@ -67,6 +67,8 @@ static const char *bindingName(const LookupListRec *names, Int value)
 static UnicodeString bindingText(MappableKeyType key, MappableKeyModState modifiers)
 {
 	AsciiString text;
+	if (key == MK_NONE)
+		modifiers = NONE;
 	if (modifiers & ALT) text.concat("Alt+");
 	if (modifiers & CTRL) text.concat("Ctrl+");
 	if (modifiers & SHIFT) text.concat("Shift+");

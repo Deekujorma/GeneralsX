@@ -459,6 +459,10 @@ GameMessageDisposition MetaEventTranslator::translateGameMessage(const GameMessa
 	{
 		onMouseEvent(msg);
 	}
+	else if (t == GameMessage::MSG_META_OPTIONS || t == GameMessage::MSG_CLEAR_GAME_DATA || t == GameMessage::MSG_NEW_GAME)
+	{
+		m_activeCameraPans.clear();
+	}
 
 	return disp;
 }
@@ -559,20 +563,21 @@ void MetaEventTranslator::onKeyEvent(const GameMessage *msg, GameMessageDisposit
 	const Int systemKeyState = msg->getArgument(1)->integer;
 
 	const MappableKeyType key = (MappableKeyType)systemKey;
-	// GeneralsX @bugfix OpenAI 23/09/2026 Match pan releases by physical key so modifier changes cannot stick scrolling.
+	Bool releasedCameraPan = false;
+	// GeneralsX @bugfix OpenAI 24/09/2026 Release active pans by physical key without swallowing modifier-distinct UP mappings.
 	if (msg->getType() == GameMessage::MSG_RAW_KEY_UP)
 	{
-		for (const MetaMapRec *held = TheMetaMap->getFirstMetaMapRec(); held; held = held->m_next)
+		const UnsignedInt releasedDirections = m_activeCameraPans.releasePhysicalKey(key);
+		for (Int direction = 0; direction < 4; ++direction)
 		{
-			if (held->m_key == key && held->m_meta >= GameMessage::MSG_META_CAMERA_PAN_UP && held->m_meta <= GameMessage::MSG_META_CAMERA_PAN_RIGHT)
+			if (releasedDirections & (1U << direction))
 			{
-				GameMessage *pan = TheMessageStream->appendMessage(held->m_meta);
+				GameMessage *pan = TheMessageStream->appendMessage(
+					(GameMessage::Type)(GameMessage::MSG_META_CAMERA_PAN_UP + direction));
 				pan->appendIntegerArgument(FALSE);
-				disp = DESTROY_MESSAGE;
+				releasedCameraPan = true;
 			}
 		}
-		if (disp == DESTROY_MESSAGE)
-			return;
 	}
 
 	// for our purposes here, we don't care to distinguish between right and left keys,
@@ -661,13 +666,18 @@ void MetaEventTranslator::onKeyEvent(const GameMessage *msg, GameMessageDisposit
 
 				GameMessage *metaMsg = TheMessageStream->appendMessage(map->m_meta);
 				if (map->m_meta >= GameMessage::MSG_META_CAMERA_PAN_UP && map->m_meta <= GameMessage::MSG_META_CAMERA_PAN_RIGHT)
+				{
 					metaMsg->appendIntegerArgument(TRUE);
+					m_activeCameraPans.activate(map->m_meta - GameMessage::MSG_META_CAMERA_PAN_UP, key);
+				}
 				//DEBUG_LOG(("Frame %d: MetaEventTranslator::translateGameMessage() normal: %s", TheGameLogic->getFrame(), findGameMessageNameByType(map->m_meta)));
 			}
 			disp = DESTROY_MESSAGE;
 			break;
 		}
 	}
+	if (releasedCameraPan)
+		disp = DESTROY_MESSAGE;
 
 	if (msg->getType() == GameMessage::MSG_RAW_KEY_DOWN)
   {
@@ -1188,27 +1198,35 @@ Bool MetaMap::applyBinding(GameMessage::Type type, MappableKeyType key, Mappable
 		MetaMapRec *conflictingAction = getLogicalRepresentative(getMetaMapRec(conflict->m_meta));
 		MetaMapRec *conflictingPartner = getLogicalPartner(conflictingAction);
 		conflictingAction->m_key = MK_NONE;
+		conflictingAction->m_modState = NONE;
 		if (conflictingPartner)
+		{
 			conflictingPartner->m_key = MK_NONE;
+			conflictingPartner->m_modState = NONE;
+		}
 		for (MetaMapRec *other = m_metaMaps; other; other = other->m_next)
 		{
 			if (getLogicalRepresentative(other) != map && other->m_key == key && other->m_modState == modifiers && (other->m_usableIn & map->m_usableIn))
 			{
 				MetaMapRec *otherAction = getLogicalRepresentative(other);
 				otherAction->m_key = MK_NONE;
+				otherAction->m_modState = NONE;
 				MetaMapRec *otherPartner = getLogicalPartner(otherAction);
 				if (otherPartner)
+				{
 					otherPartner->m_key = MK_NONE;
+					otherPartner->m_modState = NONE;
+				}
 			}
 		}
 	}
 	map->m_key = key;
-	map->m_modState = modifiers;
+	map->m_modState = (MappableKeyModState)KeyBindingRules::NormalizeModifiersForKey(key, MK_NONE, modifiers);
 	MetaMapRec *partner = getLogicalPartner(map);
 	if (partner)
 	{
 		partner->m_key = key;
-		partner->m_modState = modifiers;
+		partner->m_modState = (MappableKeyModState)KeyBindingRules::NormalizeModifiersForKey(key, MK_NONE, modifiers);
 	}
 	return true;
 }

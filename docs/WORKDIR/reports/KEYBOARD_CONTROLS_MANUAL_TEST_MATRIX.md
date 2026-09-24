@@ -15,7 +15,7 @@ Validate both Generals and Zero Hour on Linux, Linux Flatpak, macOS, and Windows
 7. Open and close gameplay menus around key transitions and confirm no held direction survives the input reset.
 8. Select a command, click the capture field, and rebind it repeatedly; verify focus, pending text, current binding, Assign, and Escape cancellation after each attempt.
 9. Create a conflict and test both Cancel and Replace; verify Replace unbinds the overlapping command only.
-10. Verify W, Shift+W, Ctrl+W, and Alt+W are treated as distinct combinations.
+10. Verify W, Shift+W, Ctrl+W, and Alt+W are distinct; specifically bind W to camera pan and Shift+W to a held BEGIN/END action, then verify both release correctly.
 11. Focus text-entry fields and confirm gameplay controls do not activate.
 12. Confirm the selected-command description displays the reset/unbind shortcuts; press Ctrl+Delete while capturing to unbind, then Ctrl+Backspace to restore its default.
 13. Use Reset All and confirm all retail/mod effective defaults are restored.

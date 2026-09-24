@@ -52,6 +52,22 @@ class KeyBindingIntegrationTests(unittest.TestCase):
         release = META[META.index("if (msg->getType() == GameMessage::MSG_RAW_KEY_UP"):META.index("// for our purposes here")]
         self.assertNotIn("newModState", release)
 
+    def test_camera_release_continues_through_meta_up_matching_then_is_consumed(self):
+        release = META[META.index("Bool releasedCameraPan"):META.index("// for our purposes here")]
+        self.assertIn("releasePhysicalKey", release)
+        self.assertNotIn("return;", release)
+        loop_start = META.index("for (const MetaMapRec *map", META.index("Bool releasedCameraPan"))
+        normal_loop_end = META[loop_start:META.index("if (msg->getType() == GameMessage::MSG_RAW_KEY_DOWN")]
+        self.assertIn("map->m_transition == UP", normal_loop_end)
+        self.assertIn("if (releasedCameraPan)\n\t\tdisp = DESTROY_MESSAGE", normal_loop_end)
+
+    def test_unbound_actions_clear_stale_modifiers_for_both_pair_halves(self):
+        apply = META[META.index("Bool MetaMap::applyBinding"):META.index("Bool MetaMap::setBinding")]
+        self.assertIn("conflictingAction->m_modState = NONE", apply)
+        self.assertIn("conflictingPartner->m_modState = NONE", apply)
+        self.assertIn("otherAction->m_modState = NONE", apply)
+        self.assertIn("NormalizeModifiersForKey", apply)
+
     def test_game_variants_keep_identical_menu_logic(self):
         base = (ROOT / "Generals/Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/KeyboardOptionsMenu.cpp").read_text()
         zh = (ROOT / "GeneralsMD/Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/KeyboardOptionsMenu.cpp").read_text()

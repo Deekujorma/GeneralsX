@@ -38,6 +38,11 @@ inline bool SplitOverride(const char *value, const char *&separator)
 	separator = value ? std::strchr(value, ',') : nullptr;
 	return separator && separator != value && separator[1] != '\0' && std::strchr(separator + 1, ',') == nullptr;
 }
+
+inline int NormalizeModifiersForKey(int key, int noneKey, int modifiers)
+{
+	return key == noneKey ? 0 : modifiers;
+}
 }
 
 class HeldCameraPanState
@@ -53,4 +58,45 @@ public:
 
 private:
 	bool m_directions[4];
+};
+
+// GeneralsX @feature OpenAI 24/09/2026 Track which physical key actually started each pan action.
+class ActiveCameraPanBindings
+{
+public:
+	ActiveCameraPanBindings() { clear(); }
+	void clear()
+	{
+		for (int i = 0; i < 4; ++i)
+		{
+			m_active[i] = false;
+			m_keys[i] = 0;
+		}
+	}
+	void activate(int direction, int key)
+	{
+		if (direction >= 0 && direction < 4)
+		{
+			m_active[direction] = true;
+			m_keys[direction] = key;
+		}
+	}
+	unsigned int releasePhysicalKey(int key)
+	{
+		unsigned int releasedDirections = 0;
+		for (int i = 0; i < 4; ++i)
+		{
+			if (m_active[i] && m_keys[i] == key)
+			{
+				m_active[i] = false;
+				releasedDirections |= 1U << i;
+			}
+		}
+		return releasedDirections;
+	}
+	bool isActive(int direction) const { return direction >= 0 && direction < 4 && m_active[direction]; }
+
+private:
+	bool m_active[4];
+	int m_keys[4];
 };
