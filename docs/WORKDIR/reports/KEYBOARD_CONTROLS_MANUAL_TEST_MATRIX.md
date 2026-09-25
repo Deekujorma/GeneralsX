@@ -6,7 +6,7 @@ Validate both Generals and Zero Hour on Linux, Linux Flatpak, macOS, and Windows
 
 ## Matrix
 
-1. Open the retail Options screen, confirm the injected Keyboard Controls button is visible, open the GeneralsX keyboard layout, then confirm a clean install pans with Up, Down, Left, and Right Arrow.
+1. Open the retail Options screen, confirm the injected Keyboard Controls button is visible, and verify the list opens at the Camera Controls section with readable section headers and a clearly highlighted selected action.
 2. Rebind Camera Pan Up/Left/Down/Right to W/A/S/D in Keyboard Options, accepting conflicts when prompted.
 3. Hold and release each direction repeatedly, including rapid press/release cycles.
 4. Verify W+A, W+D, S+A, and S+D diagonal scrolling.
@@ -23,3 +23,4 @@ Validate both Generals and Zero Hour on Linux, Linux Flatpak, macOS, and Windows
 15. Corrupt one override and add an obsolete action name; confirm valid overrides still load and the game remains usable.
 16. Confirm mouse-edge and right-mouse scrolling, scroll speed, constraints, campaign play, replay playback, and network determinism are unchanged.
 17. Change an ordinary Options value without accepting it, open Keyboard Controls, then use Back and Escape to return; confirm Options is hidden while the child page is open and the unsaved value remains intact afterward.
+18. Inspect every section for missing localization placeholders; verify control groups and bookmarks use readable Create/Select Team and Set/View Bookmark labels.

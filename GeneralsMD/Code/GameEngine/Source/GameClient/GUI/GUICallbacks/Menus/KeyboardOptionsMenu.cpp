@@ -109,6 +109,9 @@ static MappableKeyModState modifiersFromState(Int state)
 	return (MappableKeyModState)modifiers;
 }
 
+static Bool isMissingText(const UnicodeString &text);
+static UnicodeString actionDisplayName(const MetaMapRec *action);
+
 static void showSelectedStatus()
 {
 	if (!s_selected)
@@ -118,7 +121,8 @@ static void showSelectedStatus()
 	}
 	else
 	{
-		GadgetStaticTextSetText(s_status, s_selected->m_description);
+		GadgetStaticTextSetText(s_status,
+			isMissingText(s_selected->m_description) ? actionDisplayName(s_selected) : s_selected->m_description);
 	}
 	const Bool enabled = s_selected != nullptr;
 	s_change->winEnable(enabled);
@@ -133,6 +137,149 @@ static void cancelCapture()
 	s_capturedModifiers = NONE;
 	showSelectedStatus();
 	TheWindowManager->winSetFocus(s_parent);
+}
+
+
+enum KeyboardActionGroup
+{
+	KEYBOARD_GROUP_CAMERA = 0,
+	KEYBOARD_GROUP_SELECTION,
+	KEYBOARD_GROUP_UNIT_COMMANDS,
+	KEYBOARD_GROUP_CONTROL_GROUPS,
+	KEYBOARD_GROUP_BOOKMARKS,
+	KEYBOARD_GROUP_INTERFACE,
+	KEYBOARD_GROUP_MISC,
+	KEYBOARD_GROUP_COUNT
+};
+
+static Bool isMissingText(const UnicodeString &text)
+{
+	return text.isEmpty() || text.startsWith(L"MISSING:");
+}
+
+static UnicodeString explicitActionName(GameMessage::Type type)
+{
+	UnicodeString text;
+	if (type >= GameMessage::MSG_META_CREATE_TEAM0 && type <= GameMessage::MSG_META_CREATE_TEAM9)
+		text.format(L"Create Team %d", type - GameMessage::MSG_META_CREATE_TEAM0);
+	else if (type >= GameMessage::MSG_META_SELECT_TEAM0 && type <= GameMessage::MSG_META_SELECT_TEAM9)
+		text.format(L"Select Team %d", type - GameMessage::MSG_META_SELECT_TEAM0);
+	else if (type >= GameMessage::MSG_META_ADD_TEAM0 && type <= GameMessage::MSG_META_ADD_TEAM9)
+		text.format(L"Add Team %d", type - GameMessage::MSG_META_ADD_TEAM0);
+	else if (type >= GameMessage::MSG_META_VIEW_TEAM0 && type <= GameMessage::MSG_META_VIEW_TEAM9)
+		text.format(L"View Team %d", type - GameMessage::MSG_META_VIEW_TEAM0);
+	else if (type >= GameMessage::MSG_META_SAVE_VIEW1 && type <= GameMessage::MSG_META_SAVE_VIEW8)
+		text.format(L"Set Bookmark %d", type - GameMessage::MSG_META_SAVE_VIEW1 + 1);
+	else if (type >= GameMessage::MSG_META_VIEW_VIEW1 && type <= GameMessage::MSG_META_VIEW_VIEW8)
+		text.format(L"View Bookmark %d", type - GameMessage::MSG_META_VIEW_VIEW1 + 1);
+	else
+	{
+		switch (type)
+		{
+			case GameMessage::MSG_META_CAMERA_PAN_UP: text = L"Camera Pan Up"; break;
+			case GameMessage::MSG_META_CAMERA_PAN_DOWN: text = L"Camera Pan Down"; break;
+			case GameMessage::MSG_META_CAMERA_PAN_LEFT: text = L"Camera Pan Left"; break;
+			case GameMessage::MSG_META_CAMERA_PAN_RIGHT: text = L"Camera Pan Right"; break;
+			case GameMessage::MSG_META_SELECT_ALL: text = L"Select All"; break;
+			case GameMessage::MSG_META_SELECT_ALL_AIRCRAFT: text = L"Select All Aircraft"; break;
+			case GameMessage::MSG_META_SELECT_NEXT_IDLE_WORKER: text = L"Select Next Idle Worker"; break;
+			case GameMessage::MSG_META_SELECT_HERO: text = L"Select Hero"; break;
+			case GameMessage::MSG_META_SCATTER: text = L"Scatter"; break;
+			case GameMessage::MSG_META_STOP: text = L"Stop"; break;
+			case GameMessage::MSG_META_DEPLOY: text = L"Deploy"; break;
+			case GameMessage::MSG_META_FOLLOW: text = L"Follow"; break;
+			case GameMessage::MSG_META_OPTIONS: text = L"Options"; break;
+			case GameMessage::MSG_META_DIPLOMACY: text = L"Diplomacy"; break;
+			default: break;
+		}
+	}
+	return text;
+}
+
+static UnicodeString prettifyActionName(GameMessage::Type type)
+{
+	const char *name = GameMessage::getCommandTypeAsString(type);
+	if (strncmp(name, "MSG_META_", 9) == 0) name += 9;
+	if (strncmp(name, "BEGIN_", 6) == 0) name += 6;
+	if (strncmp(name, "END_", 4) == 0) name += 4;
+	AsciiString readable;
+	Bool capitalize = true;
+	for (const char *c = name; *c; ++c)
+	{
+		if (*c == '_')
+		{
+			readable.concat(" ");
+			capitalize = true;
+		}
+		else
+		{
+			char letter[2] = { *c, 0 };
+			if (!capitalize && letter[0] >= 'A' && letter[0] <= 'Z') letter[0] += 'a' - 'A';
+			readable.concat(letter);
+			capitalize = false;
+		}
+	}
+	UnicodeString result;
+	result.translate(readable);
+	return result;
+}
+
+static UnicodeString actionDisplayName(const MetaMapRec *action)
+{
+	if (!isMissingText(action->m_displayName))
+		return action->m_displayName;
+	UnicodeString fallback = explicitActionName(action->m_meta);
+	return fallback.isEmpty() ? prettifyActionName(action->m_meta) : fallback;
+}
+
+static KeyboardActionGroup actionGroup(const MetaMapRec *action)
+{
+	const GameMessage::Type type = action->m_meta;
+	const char *name = GameMessage::getCommandTypeAsString(type);
+	if ((type >= GameMessage::MSG_META_CAMERA_PAN_UP && type <= GameMessage::MSG_META_CAMERA_PAN_RIGHT)
+		|| strstr(name, "CAMERA") != nullptr)
+		return KEYBOARD_GROUP_CAMERA;
+	if (type >= GameMessage::MSG_META_CREATE_TEAM0 && type <= GameMessage::MSG_META_VIEW_TEAM9)
+		return KEYBOARD_GROUP_CONTROL_GROUPS;
+	if (type >= GameMessage::MSG_META_SAVE_VIEW1 && type <= GameMessage::MSG_META_VIEW_VIEW8)
+		return KEYBOARD_GROUP_BOOKMARKS;
+	if (action->m_category == CATEGORY_SELECTION)
+		return KEYBOARD_GROUP_SELECTION;
+	if (action->m_category == CATEGORY_CONTROL)
+		return KEYBOARD_GROUP_UNIT_COMMANDS;
+	if (action->m_category == CATEGORY_INTERFACE || action->m_category == CATEGORY_INFORMATION)
+		return KEYBOARD_GROUP_INTERFACE;
+	return KEYBOARD_GROUP_MISC;
+}
+
+static Int actionPriority(const MetaMapRec *action)
+{
+	const GameMessage::Type type = action->m_meta;
+	if (type >= GameMessage::MSG_META_CAMERA_PAN_UP && type <= GameMessage::MSG_META_CAMERA_PAN_RIGHT)
+		return type - GameMessage::MSG_META_CAMERA_PAN_UP;
+	if (type >= GameMessage::MSG_META_CREATE_TEAM0 && type <= GameMessage::MSG_META_CREATE_TEAM9)
+		return type - GameMessage::MSG_META_CREATE_TEAM0;
+	if (type >= GameMessage::MSG_META_SELECT_TEAM0 && type <= GameMessage::MSG_META_SELECT_TEAM9)
+		return 20 + type - GameMessage::MSG_META_SELECT_TEAM0;
+	if (type >= GameMessage::MSG_META_ADD_TEAM0 && type <= GameMessage::MSG_META_ADD_TEAM9)
+		return 40 + type - GameMessage::MSG_META_ADD_TEAM0;
+	if (type >= GameMessage::MSG_META_VIEW_TEAM0 && type <= GameMessage::MSG_META_VIEW_TEAM9)
+		return 60 + type - GameMessage::MSG_META_VIEW_TEAM0;
+	if (type >= GameMessage::MSG_META_SAVE_VIEW1 && type <= GameMessage::MSG_META_SAVE_VIEW8)
+		return type - GameMessage::MSG_META_SAVE_VIEW1;
+	if (type >= GameMessage::MSG_META_VIEW_VIEW1 && type <= GameMessage::MSG_META_VIEW_VIEW8)
+		return 20 + type - GameMessage::MSG_META_VIEW_VIEW1;
+	return 100 + (Int)type;
+}
+
+static UnicodeString groupDisplayName(KeyboardActionGroup group)
+{
+	static const char *keys[KEYBOARD_GROUP_COUNT] = { "GUI:KeyboardGroupCamera", "GUI:KeyboardGroupSelection",
+		"GUI:KeyboardGroupUnitCommands", "GUI:KeyboardGroupControlGroups", "GUI:KeyboardGroupBookmarks",
+		"GUI:KeyboardGroupInterface", "GUI:KeyboardGroupMisc" };
+	static const WideChar *fallbacks[KEYBOARD_GROUP_COUNT] = { L"CAMERA CONTROLS", L"SELECTION CONTROLS",
+		L"UNIT COMMANDS", L"CONTROL GROUPS", L"BOOKMARKS", L"INTERFACE", L"MISCELLANEOUS" };
+	return TheGameText->FETCH_OR_SUBSTITUTE(keys[group], fallbacks[group]);
 }
 
 static void updateSelectedBinding()
@@ -158,16 +305,45 @@ static void fillCommands()
 	GadgetListBoxReset(s_commands);
 	s_selected = nullptr;
 	s_selectedRow = -1;
-	const Color white = GameMakeColor(255, 255, 255, 255);
-	for (const MetaMapRec *map = TheMetaMap->getFirstMetaMapRec(); map; map = map->m_next)
+	MetaMapRec *actions[512];
+	Int actionCount = 0;
+	for (const MetaMapRec *map = TheMetaMap->getFirstMetaMapRec(); map && actionCount < 512; map = map->m_next)
 	{
-		if (map->m_displayName.isEmpty() || !TheMetaMap->isLogicalRepresentative(map))
-			continue;
-		MetaMapRec *action = TheMetaMap->getMutableMetaMapRec(map->m_meta);
-		const Int row = GadgetListBoxAddEntryText(s_commands, action->m_displayName, white, -1, 0);
+		if (!map->m_displayName.isEmpty() && TheMetaMap->isLogicalRepresentative(map))
+			actions[actionCount++] = TheMetaMap->getMutableMetaMapRec(map->m_meta);
+	}
+	for (Int i = 1; i < actionCount; ++i)
+	{
+		MetaMapRec *action = actions[i];
+		const Int order = actionGroup(action) * 10000 + actionPriority(action);
+		Int j = i;
+		while (j > 0 && actionGroup(actions[j - 1]) * 10000 + actionPriority(actions[j - 1]) > order)
+		{
+			actions[j] = actions[j - 1];
+			--j;
+		}
+		actions[j] = action;
+	}
+
+	const Color white = GameMakeColor(255, 255, 255, 255);
+	const Color sectionColor = GameMakeColor(255, 210, 80, 255);
+	KeyboardActionGroup currentGroup = KEYBOARD_GROUP_COUNT;
+	for (Int i = 0; i < actionCount; ++i)
+	{
+		MetaMapRec *action = actions[i];
+		const KeyboardActionGroup group = actionGroup(action);
+		if (group != currentGroup)
+		{
+			const Int headerRow = GadgetListBoxAddEntryText(s_commands, groupDisplayName(group), sectionColor, -1, 0);
+			GadgetListBoxAddEntryText(s_commands, UnicodeString(L" "), sectionColor, headerRow, 1);
+			GadgetListBoxSetItemData(s_commands, nullptr, headerRow);
+			currentGroup = group;
+		}
+		const Int row = GadgetListBoxAddEntryText(s_commands, actionDisplayName(action), white, -1, 0);
 		GadgetListBoxAddEntryText(s_commands, bindingText(action->m_key, action->m_modState), white, row, 1);
 		GadgetListBoxSetItemData(s_commands, action, row);
 	}
+	GadgetListBoxSetTopVisibleEntry(s_commands, 0);
 	showSelectedStatus();
 }
 
@@ -203,7 +379,7 @@ static void requestAssignment(MappableKeyType key, MappableKeyModState modifiers
 	UnicodeString body;
 	UnicodeString bodyFormat = TheGameText->FETCH_OR_SUBSTITUTE("GUI:KeyboardBindingConflictBody",
 		L"%ls is currently assigned to %ls. Replace that binding?");
-	body.format(bodyFormat.str(), bindingText(key, modifiers).str(), conflict->m_displayName.str());
+	body.format(bodyFormat.str(), bindingText(key, modifiers).str(), actionDisplayName(conflict).str());
 	MessageBoxYesNo(TheGameText->FETCH_OR_SUBSTITUTE("GUI:KeyboardBindingConflictTitle", L"Keyboard binding conflict"),
 		body, replaceConflict, cancelConflict);
 }
@@ -215,7 +391,7 @@ static void beginCapture()
 	UnicodeString prompt;
 	UnicodeString promptFormat = TheGameText->FETCH_OR_SUBSTITUTE("GUI:KeyboardBindingPrompt",
 		L"Press a key for \"%ls\" - Esc to cancel");
-	prompt.format(promptFormat.str(), s_selected->m_displayName.str());
+	prompt.format(promptFormat.str(), actionDisplayName(s_selected).str());
 	GadgetStaticTextSetText(s_status, prompt);
 	TheWindowManager->winSetFocus(s_parent);
 }

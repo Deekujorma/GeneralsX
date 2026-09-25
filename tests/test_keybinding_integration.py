@@ -135,6 +135,32 @@ class KeyBindingIntegrationTests(unittest.TestCase):
         for action in ("MSG_META_CAMERA_PAN_UP", "MSG_META_CAMERA_PAN_DOWN", "MSG_META_CAMERA_PAN_LEFT", "MSG_META_CAMERA_PAN_RIGHT"):
             self.assertIn(action, META)
 
+    def test_action_names_have_grouped_readable_fallbacks(self):
+        menu = (ROOT / "GeneralsMD/Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/KeyboardOptionsMenu.cpp").read_text()
+        self.assertIn('text.startsWith(L"MISSING:")', menu)
+        self.assertIn("explicitActionName", menu)
+        self.assertIn("prettifyActionName", menu)
+        self.assertIn("actionDisplayName(action)", menu)
+        self.assertNotIn("GadgetListBoxAddEntryText(s_commands, action->m_displayName", menu)
+        for fallback in ("Create Team %d", "Select Team %d", "Set Bookmark %d", "View Bookmark %d"):
+            self.assertIn(fallback, menu)
+
+        expected_groups = ("CAMERA CONTROLS", "SELECTION CONTROLS", "UNIT COMMANDS", "CONTROL GROUPS",
+                           "BOOKMARKS", "INTERFACE", "MISCELLANEOUS")
+        group_names = menu[menu.index("static UnicodeString groupDisplayName"):menu.index("static void updateSelectedBinding")]
+        positions = [group_names.index(group) for group in expected_groups]
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn("GadgetListBoxSetItemData(s_commands, nullptr, headerRow)", menu)
+        self.assertIn("GadgetListBoxSetTopVisibleEntry(s_commands, 0)", menu)
+
+    def test_list_readability_and_selection_highlight(self):
+        listbox = LAYOUT[LAYOUT.index('NAME = "KeyboardOptionsMenu.wnd:ListBoxCommandList";'):
+                         LAYOUT.index("  END", LAYOUT.index('NAME = "KeyboardOptionsMenu.wnd:ListBoxCommandList";'))]
+        self.assertIn('FONT = NAME: "Arial", SIZE: 13', listbox)
+        self.assertIn("COLOR: 35 100 165 255, BORDERCOLOR: 255 210 80 255", listbox)
+        self.assertIn("COLOR: 50 125 195 255, BORDERCOLOR: 255 225 100 255", listbox)
+        self.assertIn("SCROLLBAR: 1", listbox)
+
     def test_keyboard_menu_is_an_options_subpage_not_a_shell_screen(self):
         options = (ROOT / "GeneralsMD/Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/OptionsMenu.cpp").read_text()
         menu = (ROOT / "GeneralsMD/Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/KeyboardOptionsMenu.cpp").read_text()
