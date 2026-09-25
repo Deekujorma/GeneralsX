@@ -1770,7 +1770,8 @@ WindowMsgHandledType OptionsMenuSystem( GameWindow *window, UnsignedInt msg,
 			}
 			else if ( controlID == buttonKeyboardOptionsMenu )
 			{
-				TheShell->push( "Menus/KeyboardOptionsMenu.wnd" );
+				// GeneralsX @bugfix OpenAI 25/09/2026 Open Keyboard Controls without changing the Shell screen stack.
+				ShowKeyboardOptionsMenu();
 			}
 			else if(controlID == checkDrawAnchorID )
       {

@@ -88,23 +88,24 @@ class KeyBindingIntegrationTests(unittest.TestCase):
         for control in (
             "ParentKeyboardOptionsMenu",
             "ButtonBack",
-            "ComboBoxCategoryList",
             "ListBoxCommandList",
-            "StaticTextDescription",
-            "StaticTextCurrentHotkey",
-            "TextEntryAssignHotkey",
-            "ButtonAssign",
+            "StaticTextStatus",
+            "LabelAction",
+            "LabelBinding",
+            "ButtonChangeBinding",
+            "ButtonClear",
+            "ButtonResetSelected",
             "ButtonResetAll",
         ):
             self.assertEqual(LAYOUT.count(f'NAME = "KeyboardOptionsMenu.wnd:{control}";'), 1)
+        for obsolete in ("ComboBoxCategoryList", "TextEntryAssignHotkey", "ButtonAssign"):
+            self.assertNotIn(f'KeyboardOptionsMenu.wnd:{obsolete}', LAYOUT)
+        self.assertIn("COLUMNS: 2, COLUMNWIDTH: 75, COLUMNWIDTH: 25", LAYOUT)
         lines = [line.strip() for line in LAYOUT.splitlines()]
         self.assertEqual(lines.count("WINDOW"), lines.count("END"))
 
     def test_generalsx_keyboard_layout_uses_color_draw_paths(self):
         controls = re.split(r"(?m)^\s*WINDOW\s*$", LAYOUT)[1:]
-        assign_entry = next(control for control in controls if 'NAME = "KeyboardOptionsMenu.wnd:TextEntryAssignHotkey";' in control)
-        assign_status = re.search(r"(?m)^\s*STATUS = ([^;]+);", assign_entry).group(1)
-        self.assertNotIn("IMAGE", assign_status.split("+"))
         for control in controls:
             status_match = re.search(r"(?m)^\s*STATUS = ([^;]+);", control)
             if not status_match:
@@ -123,11 +124,35 @@ class KeyBindingIntegrationTests(unittest.TestCase):
             self.assertIn("findRequiredControl", menu)
             self.assertIn("Missing required control: %s", menu)
 
+    def test_list_rows_store_actions_and_current_bindings(self):
+        menu = (ROOT / "GeneralsMD/Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/KeyboardOptionsMenu.cpp").read_text()
+        self.assertIn("isLogicalRepresentative", menu)
+        self.assertIn("GadgetListBoxSetItemData(s_commands, action, row)", menu)
+        self.assertIn("GadgetListBoxGetItemData(s_commands, s_selectedRow)", menu)
+        self.assertIn("bindingText(action->m_key, action->m_modState)", menu)
+        self.assertIn('FETCH_OR_SUBSTITUTE("GUI:Unbound", L"Unbound")', menu)
+        for action in ("MSG_META_CAMERA_PAN_UP", "MSG_META_CAMERA_PAN_DOWN", "MSG_META_CAMERA_PAN_LEFT", "MSG_META_CAMERA_PAN_RIGHT"):
+            self.assertIn(action, META)
+
+    def test_keyboard_menu_is_an_options_subpage_not_a_shell_screen(self):
+        options = (ROOT / "GeneralsMD/Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/OptionsMenu.cpp").read_text()
+        menu = (ROOT / "GeneralsMD/Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/KeyboardOptionsMenu.cpp").read_text()
+        keyboard_branch = options[options.index("else if ( controlID == buttonKeyboardOptionsMenu )") :]
+        keyboard_branch = keyboard_branch[:keyboard_branch.index("else if", 8)]
+        self.assertIn("ShowKeyboardOptionsMenu()", keyboard_branch)
+        self.assertNotIn("TheShell->push", keyboard_branch)
+        self.assertNotIn("TheShell->pop", menu)
+        self.assertIn("s_optionsLayout->hide(TRUE)", menu)
+        self.assertIn('winCreateLayout("Menus/KeyboardOptionsMenu.wnd")', menu)
+        self.assertIn("optionsLayout->hide(FALSE)", menu)
+        self.assertIn("optionsLayout->bringForward()", menu)
+        self.assertIn("CloseKeyboardOptionsMenu()", menu)
+
     def test_zero_hour_options_button_and_packaging_are_wired(self):
         options = (ROOT / "GeneralsMD/Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/OptionsMenu.cpp").read_text()
         self.assertIn("createKeyboardOptionsButton(parent)", options)
         self.assertIn('OptionsMenu.wnd:ButtonKeyboardOptions', options)
-        self.assertIn('TheShell->push( "Menus/KeyboardOptionsMenu.wnd" )', options)
+        self.assertNotIn('TheShell->push( "Menus/KeyboardOptionsMenu.wnd" )', options)
         helper = options[options.index("static GameWindow *createKeyboardOptionsButton") : options.index("void OptionsMenuInit")]
         self.assertNotIn("if (button)\n\t\treturn button;", helper)
         self.assertIn("if (!button)", helper)
