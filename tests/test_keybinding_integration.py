@@ -101,6 +101,7 @@ class KeyBindingIntegrationTests(unittest.TestCase):
         for obsolete in ("ComboBoxCategoryList", "TextEntryAssignHotkey", "ButtonAssign"):
             self.assertNotIn(f'KeyboardOptionsMenu.wnd:{obsolete}', LAYOUT)
         self.assertIn("COLUMNS: 2, COLUMNWIDTH: 75, COLUMNWIDTH: 25", LAYOUT)
+        self.assertIn("\nENDALLCHILDREN\nEND\n", LAYOUT)
         lines = [line.strip() for line in LAYOUT.splitlines()]
         self.assertEqual(lines.count("WINDOW"), lines.count("END"))
 
@@ -147,6 +148,28 @@ class KeyBindingIntegrationTests(unittest.TestCase):
         self.assertIn("optionsLayout->hide(FALSE)", menu)
         self.assertIn("optionsLayout->bringForward()", menu)
         self.assertIn("CloseKeyboardOptionsMenu()", menu)
+
+    def test_keyboard_menu_modal_and_escape_ownership(self):
+        menu = (ROOT / "GeneralsMD/Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/KeyboardOptionsMenu.cpp").read_text()
+        init = menu[menu.index("void KeyboardOptionsMenuInit"):menu.index("void KeyboardOptionsMenuShutdown")]
+        self.assertLess(init.index("findRequiredControl"), init.index("winSetModal(s_parent)"))
+        self.assertLess(init.index("winSetModal(s_parent)"), init.index("winSetFocus(s_parent)"))
+        close = menu[menu.index("void CloseKeyboardOptionsMenu"):menu.index("void KeyboardOptionsMenuInit")]
+        self.assertIn('nameToKey("OptionsMenu.wnd:OptionsMenuParent")', close)
+        self.assertLess(close.index("winSetModal(optionsParent)"), close.index("winSetFocus(optionsParent)"))
+
+        input_callback = menu[menu.index("WindowMsgHandledType KeyboardOptionsMenuInput"):
+                              menu.index("WindowMsgHandledType KeyboardOptionsMenuSystem")]
+        escape_down = input_callback[input_callback.index("if (state & KEY_STATE_DOWN)"):
+                                     input_callback.index("if (state & KEY_STATE_UP)")]
+        escape_up = input_callback[input_callback.index("if (state & KEY_STATE_UP)"):]
+        self.assertIn("s_captureMode", escape_down)
+        self.assertIn("cancelCapture()", escape_down)
+        self.assertNotIn("CloseKeyboardOptionsMenu()", escape_down)
+        self.assertIn("s_suppressEscapeUp", escape_up)
+        self.assertIn("CloseKeyboardOptionsMenu()", escape_up)
+        system_callback = menu[menu.index("WindowMsgHandledType KeyboardOptionsMenuSystem"):]
+        self.assertIn("if (id == s_backID) CloseKeyboardOptionsMenu()", system_callback)
 
     def test_zero_hour_options_button_and_packaging_are_wired(self):
         options = (ROOT / "GeneralsMD/Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/OptionsMenu.cpp").read_text()

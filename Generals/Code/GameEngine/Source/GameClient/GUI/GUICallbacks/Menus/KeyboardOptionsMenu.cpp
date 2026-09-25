@@ -52,6 +52,7 @@ static Int s_selectedRow = -1;
 static MappableKeyType s_capturedKey = MK_NONE;
 static MappableKeyModState s_capturedModifiers = NONE;
 static Bool s_captureMode = false;
+static Bool s_suppressEscapeUp = false;
 static Bool s_initialized = false;
 
 // GeneralsX @bugfix OpenAI 25/09/2026 Report incomplete keyboard-options layouts instead of dereferencing missing controls.
@@ -283,7 +284,10 @@ void CloseKeyboardOptionsMenu()
 		GameWindow *optionsParent = TheWindowManager->winGetWindowFromId(nullptr,
 			TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:OptionsMenuParent"));
 		if (optionsParent)
+		{
+			TheWindowManager->winSetModal(optionsParent);
 			TheWindowManager->winSetFocus(optionsParent);
+		}
 	}
 }
 
@@ -291,6 +295,7 @@ void KeyboardOptionsMenuInit(WindowLayout *layout, void *)
 {
 	s_initialized = false;
 	s_captureMode = false;
+	s_suppressEscapeUp = false;
 	s_selected = nullptr;
 	s_selectedRow = -1;
 	s_backID = TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:ButtonBack");
@@ -327,6 +332,8 @@ void KeyboardOptionsMenuInit(WindowLayout *layout, void *)
 	GadgetButtonSetText(buttonBack, TheGameText->FETCH_OR_SUBSTITUTE("GUI:Back", L"Back"));
 	fillCommands();
 	layout->hide(FALSE);
+	// GeneralsX @bugfix OpenAI 25/09/2026 Place the visible child page above the preserved hidden Options modal.
+	TheWindowManager->winSetModal(s_parent);
 	TheWindowManager->winSetFocus(s_parent);
 	s_initialized = true;
 }
@@ -334,6 +341,7 @@ void KeyboardOptionsMenuInit(WindowLayout *layout, void *)
 void KeyboardOptionsMenuShutdown(WindowLayout *layout, void *)
 {
 	s_captureMode = false;
+	s_suppressEscapeUp = false;
 	s_selected = nullptr;
 	s_selectedRow = -1;
 	s_initialized = false;
@@ -346,14 +354,28 @@ WindowMsgHandledType KeyboardOptionsMenuInput(GameWindow *, UnsignedInt msg, Win
 {
 	if (msg != GWM_CHAR) return MSG_IGNORED;
 	const Int state = (Int)mData2;
-	if (!(state & KEY_STATE_DOWN) || (state & KEY_STATE_AUTOREPEAT)) return MSG_HANDLED;
 	const Int key = (Int)mData1;
 	if (key == KEY_ESC)
 	{
-		if (s_captureMode) cancelCapture();
-		else CloseKeyboardOptionsMenu();
+		if (state & KEY_STATE_DOWN)
+		{
+			if (!(state & KEY_STATE_AUTOREPEAT) && s_captureMode)
+			{
+				cancelCapture();
+				s_suppressEscapeUp = true;
+			}
+			return MSG_HANDLED;
+		}
+		if (state & KEY_STATE_UP)
+		{
+			if (s_suppressEscapeUp)
+				s_suppressEscapeUp = false;
+			else
+				CloseKeyboardOptionsMenu();
+		}
 		return MSG_HANDLED;
 	}
+	if (!(state & KEY_STATE_DOWN) || (state & KEY_STATE_AUTOREPEAT)) return MSG_HANDLED;
 	if (!s_captureMode) return MSG_IGNORED;
 	const MappableKeyType mapped = mappableKey(key);
 	if (mapped != MK_NONE)
