@@ -134,6 +134,8 @@ public:
 	Real getMinCameraHeight() const;
 	Real getCameraPitch() const;
 	Real getTerrainDrawDistanceScale() const;
+	// GeneralsX @feature OpenAI 25/09/2026 Persist the client-only battlefield HUD scale.
+	Real getControlBarScale() const;
 	Real getGameWindowTransitionSpeedMultiplier() const;
 	// GeneralsX @feature felipebraz 17/09/2026 Skirmish simulation tick rate configuration (#281)
 	Int getSkirmishTickRate() const;

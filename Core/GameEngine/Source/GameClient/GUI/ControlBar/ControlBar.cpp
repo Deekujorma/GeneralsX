@@ -79,6 +79,7 @@
 #include "GameClient/InGameUI.h"
 #include "GameClient/WindowVideoManager.h"
 #include "GameClient/ControlBarResizer.h"
+#include "GameClient/ControlBarHudScale.h"
 #include "GameClient/GadgetListBox.h"
 #include "GameClient/HotKey.h"
 #include "GameClient/GameWindowTransitions.h"
@@ -917,7 +918,7 @@ ControlBar::ControlBar()
 	m_genStarOff = nullptr;
 	m_genStarOn  = nullptr;
 	m_UIDirty    = FALSE;
-	//	m_controlBarResizer = nullptr;
+	m_controlBarResizer = nullptr;
 	m_buildUpClockColor = GameMakeColor(0,0,0,100);
 	m_commandBarBorderColor = GameMakeColor(0,0,0,100);
 	for( i = 0; i < NUM_CONTEXT_PARENTS; i++ )
@@ -1018,8 +1019,8 @@ ControlBar::~ControlBar()
 	delete m_controlBarSchemeManager;
 	m_controlBarSchemeManager = nullptr;
 
-//	delete m_controlBarResizer;
-//	m_controlBarResizer = nullptr;
+	delete m_controlBarResizer;
+	m_controlBarResizer = nullptr;
 
 	// destroy all the command set definitions
 	CommandSet *set;
@@ -1297,9 +1298,11 @@ void ControlBar::init()
 		m_rankHeroicIcon	= TheMappedImageCollection ? TheMappedImageCollection->findImageByName( "SSChevron3L" ) : nullptr;
 
 
-//		if(!m_controlBarResizer)
-//			m_controlBarResizer = NEW ControlBarResizer;
-//		m_controlBarResizer->init();
+		// GeneralsX @feature OpenAI 25/09/2026 Capture normal ControlBar windows; no proprietary Small scheme is required.
+		if(!m_controlBarResizer)
+			m_controlBarResizer = NEW ControlBarResizer;
+		m_controlBarResizer->captureCanonical(m_contextParent[ CP_MASTER ]);
+		applyConfiguredControlBarScale();
 
 
 
@@ -3074,6 +3077,7 @@ void ControlBar::setDefaultControlBarConfig()
 	m_currentControlBarStage = CONTROL_BAR_STAGE_DEFAULT;
 	setScaledViewportHeight();
 	m_contextParent[ CP_MASTER ]->winSetPosition(m_defaultControlBarPosition.x, m_defaultControlBarPosition.y);
+	applyConfiguredControlBarScale();
 	m_contextParent[ CP_MASTER ]->winHide(FALSE);
 	repopulateBuildTooltipLayout();
 	setUpDownImages();
@@ -3850,7 +3854,21 @@ void ControlBar::setFullViewportHeight()
 
 void ControlBar::setScaledViewportHeight()
 {
-	TheTacticalView->setHeight(TheDisplay->getHeight() * TheGlobalData->m_viewportHeightScale);
+	// GeneralsX @feature OpenAI 25/09/2026 Reclaim only the vertical area released by compact HUD scaling.
+	const Real effectiveScale = CalculateControlBarViewportScale(TheGlobalData->m_viewportHeightScale,
+		TheGlobalData->m_controlBarScale);
+	TheTacticalView->setHeight(TheDisplay->getHeight() * effectiveScale);
+}
+
+void ControlBar::applyConfiguredControlBarScale(Bool recapture)
+{
+	if (!m_controlBarResizer || !m_contextParent[ CP_MASTER ])
+		return;
+	if (recapture)
+		m_controlBarResizer->captureCanonical(m_contextParent[ CP_MASTER ]);
+	m_controlBarResizer->applyCanonicalScale(TheGlobalData->m_controlBarScale);
+	if (m_currentControlBarStage == CONTROL_BAR_STAGE_DEFAULT)
+		setScaledViewportHeight();
 }
 
 // GeneralsX @bugfix w1semannn 07/06/2026 Fix tooltip height clipping with Unicode fonts (Issue #153)

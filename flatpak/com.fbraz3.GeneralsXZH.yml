@@ -107,6 +107,7 @@ modules:
       - install -Dm644 flatpak/generalsx-zh_icon_512.png /app/share/icons/hicolor/512x512/apps/com.fbraz3.GeneralsXZH.png
       - install -Dm644 resources/dxvk/dxvk.conf /app/share/generalsxzh/dxvk.conf
       - install -Dm644 GeneralsZH/Data/Window/Menus/KeyboardOptionsMenu.wnd /app/share/generalsxzh/Window/Menus/KeyboardOptionsMenu.wnd
+      - install -Dm644 GeneralsZH/Data/Window/Menus/CameraHudOptionsMenu.wnd /app/share/generalsxzh/Window/Menus/CameraHudOptionsMenu.wnd
       - install -d /app/lib
       - cp -a /run/build/generalsxzh/dxvk-src/lib/libdxvk_d3d8.so* /app/lib/
       - cp -a /run/build/generalsxzh/dxvk-src/lib/libdxvk_d3d9.so* /app/lib/
@@ -209,6 +210,8 @@ modules:
         mkdir -p "${CNC_GENERALS_INSTALLPATH%/}/Window/Menus"
         cp -f /app/share/generalsxzh/Window/Menus/KeyboardOptionsMenu.wnd \
           "${CNC_GENERALS_INSTALLPATH%/}/Window/Menus/KeyboardOptionsMenu.wnd"
+        cp -f /app/share/generalsxzh/Window/Menus/CameraHudOptionsMenu.wnd \
+          "${CNC_GENERALS_INSTALLPATH%/}/Window/Menus/CameraHudOptionsMenu.wnd"
 
         cd "${CNC_GENERALS_INSTALLPATH}"
         if [[ -z "${CNC_GENERALS_ZH_PATH:-}" ]]; then

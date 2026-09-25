@@ -126,12 +126,19 @@ extern WindowMsgHandledType ChallengeMenuInput( GameWindow *window, UnsignedInt 
 
 // Keyboard Options Menu ---------------------------------------------------------------------------
 extern void KeyboardOptionsMenuInit( WindowLayout *layout, void *userData );
+extern void CameraHudOptionsMenuInit( WindowLayout *layout, void *userData );
 extern void KeyboardOptionsMenuUpdate( WindowLayout *layout, void *userData );
+extern void CameraHudOptionsMenuUpdate( WindowLayout *layout, void *userData );
 extern void KeyboardOptionsMenuShutdown( WindowLayout *layout, void *userData );
+extern void CameraHudOptionsMenuShutdown( WindowLayout *layout, void *userData );
 extern WindowMsgHandledType KeyboardOptionsMenuSystem( GameWindow *window, UnsignedInt msg, WindowMsgData mData1, WindowMsgData mData2 );
+extern WindowMsgHandledType CameraHudOptionsMenuInput( GameWindow *window, UnsignedInt msg, WindowMsgData mData1, WindowMsgData mData2 );
+extern WindowMsgHandledType CameraHudOptionsMenuSystem( GameWindow *window, UnsignedInt msg, WindowMsgData mData1, WindowMsgData mData2 );
 extern WindowMsgHandledType KeyboardOptionsMenuInput( GameWindow *window, UnsignedInt msg, WindowMsgData mData1, WindowMsgData mData2 );
 // GeneralsX @feature OpenAI 25/09/2026 Manage Keyboard Controls as a child of the separately owned Options layout.
 extern void ShowKeyboardOptionsMenu();
+extern void ShowCameraHudOptionsMenu();
+extern void CloseCameraHudOptionsMenu();
 extern void CloseKeyboardOptionsMenu();
 
 // Lan Lobby Menu ----------------------------------------------------------------------------------

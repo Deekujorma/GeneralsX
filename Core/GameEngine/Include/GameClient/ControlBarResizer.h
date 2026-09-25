@@ -71,6 +71,8 @@ ResizerWindow();
 	ICoord2D m_altPos;
 };
 
+class GameWindow;
+
 class ControlBarResizer
 {
 public:
@@ -89,8 +91,25 @@ public:
 	void sizeWindowsDefault();
 	void sizeWindowsAlt();
 
+	// GeneralsX @feature OpenAI 25/09/2026 Scale from captured canonical geometry without cumulative drift.
+	void captureCanonical(GameWindow *root);
+	void applyCanonicalScale(Real scale);
+	void clearCanonical();
+
 	typedef std::list< ResizerWindow *> ResizerWindowList;
 	ResizerWindowList m_resizerWindowsList;
+
+private:
+	void captureCanonicalRecursive(GameWindow *window, Bool root);
+	struct CanonicalWindowGeometry
+	{
+		GameWindow *window;
+		ICoord2D position;
+		ICoord2D size;
+		Bool root;
+	};
+	typedef std::vector<CanonicalWindowGeometry> CanonicalGeometryList;
+	CanonicalGeometryList m_canonicalGeometry;
 
 };
 //-----------------------------------------------------------------------------

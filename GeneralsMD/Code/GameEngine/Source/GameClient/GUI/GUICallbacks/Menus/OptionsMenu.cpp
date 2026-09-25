@@ -969,6 +969,23 @@ static GameWindow *createKeyboardOptionsButton(GameWindow *parent)
 	if (!button)
 		return nullptr;
 
+	const NameKeyType cameraID = TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonCameraHudOptions");
+	GameWindow *camera = TheWindowManager->winGetWindowFromId(parent, cameraID);
+	if (!camera)
+	{
+		WinInstanceData cameraData;
+		cameraData.init();
+		BitSet(cameraData.m_style, GWS_PUSH_BUTTON | GWS_MOUSE_TRACK);
+		cameraData.m_decoratedNameString = "OptionsMenu.wnd:ButtonCameraHudOptions";
+		cameraData.m_textLabelString = "GUI:CameraHud";
+		camera = TheWindowManager->gogoGadgetPushButton(parent,
+			WIN_STATUS_ENABLED | WIN_STATUS_IMAGE | WIN_STATUS_TAB_STOP, 0, 0, 1, 1, &cameraData, nullptr, TRUE);
+		if (camera) camera->winSetWindowId(cameraID);
+	}
+	if (!camera) return nullptr;
+	camera->winHide(FALSE); camera->winEnable(TRUE);
+	GadgetButtonSetText(camera, TheGameText->FETCH_OR_SUBSTITUTE("GUI:CameraHud", L"Camera & HUD"));
+
 	button->winHide(FALSE);
 	button->winEnable(TRUE);
 	GadgetButtonSetText(button, TheGameText->FETCH_OR_SUBSTITUTE("GUI:KeyboardControls", L"Keyboard Controls"));
@@ -1027,11 +1044,11 @@ static GameWindow *createKeyboardOptionsButton(GameWindow *parent)
 		rowY = parentHeight > rowHeight + 10 ? parentHeight - rowHeight - 10 : 0;
 	}
 
-	Int buttonWidth = (rowWidth - gap * 3) / 4;
+	Int buttonWidth = (rowWidth - gap * 4) / 5;
 	if (buttonWidth < 1)
 		buttonWidth = 1;
-	GameWindow *buttons[4] = { button, defaults, accept, back };
-	for (Int i = 0; i < 4; ++i)
+	GameWindow *buttons[5] = { button, camera, defaults, accept, back };
+	for (Int i = 0; i < 5; ++i)
 	{
 		if (buttons[i])
 		{
@@ -1640,6 +1657,7 @@ WindowMsgHandledType OptionsMenuSystem( GameWindow *window, UnsignedInt msg,
 	static NameKeyType buttonAccept = NAMEKEY_INVALID;
 	static NameKeyType buttonReplayMenu = NAMEKEY_INVALID;
 	static NameKeyType buttonKeyboardOptionsMenu = NAMEKEY_INVALID;
+	static NameKeyType buttonCameraHudOptionsMenu = NAMEKEY_INVALID;
 
 	switch( msg )
 	{
@@ -1653,6 +1671,7 @@ WindowMsgHandledType OptionsMenuSystem( GameWindow *window, UnsignedInt msg,
 			buttonDefaults = TheNameKeyGenerator->nameToKey( "OptionsMenu.wnd:ButtonDefaults" );
 			buttonAccept = TheNameKeyGenerator->nameToKey( "OptionsMenu.wnd:ButtonAccept" );
 			buttonKeyboardOptionsMenu = TheNameKeyGenerator->nameToKey( "OptionsMenu.wnd:ButtonKeyboardOptions" );
+			buttonCameraHudOptionsMenu = TheNameKeyGenerator->nameToKey( "OptionsMenu.wnd:ButtonCameraHudOptions" );
 
 			break;
 
@@ -1767,6 +1786,10 @@ WindowMsgHandledType OptionsMenuSystem( GameWindow *window, UnsignedInt msg,
 			else if (controlID == ButtonAdvancedCancelID )
 			{
 				cancelAdvancedOptions();
+			}
+			else if ( controlID == buttonCameraHudOptionsMenu )
+			{
+				ShowCameraHudOptionsMenu();
 			}
 			else if ( controlID == buttonKeyboardOptionsMenu )
 			{

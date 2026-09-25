@@ -745,6 +745,7 @@ set(GAMEENGINE_SRC
     Source/GameClient/GUI/GUICallbacks/Menus/ExtrasMenu.cpp
     Source/GameClient/GUI/GUICallbacks/Menus/GameInfoWindow.cpp
     Source/GameClient/GUI/GUICallbacks/Menus/KeyboardOptionsMenu.cpp
+    Source/GameClient/GUI/GUICallbacks/Menus/CameraHudOptionsMenu.cpp
     Source/GameClient/GUI/GUICallbacks/Menus/LanGameOptionsMenu.cpp
     Source/GameClient/GUI/GUICallbacks/Menus/LanLobbyMenu.cpp
     Source/GameClient/GUI/GUICallbacks/Menus/LanMapSelectMenu.cpp

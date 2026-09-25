@@ -192,7 +192,9 @@ public:
 	Real m_skyBoxPositionZ;
 	Real m_drawSkyBox;
 	Real m_skyBoxScale;
-	Real m_viewportHeightScale; // The height scale of the tactical view ranging 0..1. Used to hide the world behind the Control Bar.
+	Real m_viewportHeightScale;
+	// GeneralsX @feature OpenAI 25/09/2026 Client-only battlefield HUD presentation scale.
+	Real m_controlBarScale; // The height scale of the tactical view ranging 0..1. Used to hide the world behind the Control Bar.
 	Real m_cameraPitch;
 	Real m_cameraYaw;
 #if PRESERVE_RETAIL_SCRIPTED_CAMERA
