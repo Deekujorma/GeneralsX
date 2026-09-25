@@ -938,44 +938,108 @@ static void initLabelVersion()
 	}
 }
 
-// GeneralsX @feature OpenAI 24/09/2026 Add the keyboard-controls entry without replacing the retail Options layout.
+// GeneralsX @bugfix OpenAI 25/09/2026 Reuse and reveal the retail keyboard-controls button in a derived four-button row.
 static GameWindow *createKeyboardOptionsButton(GameWindow *parent)
 {
 	if (!parent)
 		return nullptr;
+
 	const NameKeyType buttonID = TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonKeyboardOptions");
 	GameWindow *button = TheWindowManager->winGetWindowFromId(parent, buttonID);
-	if (button)
-		return button;
-
-	GameWindow *anchor = TheWindowManager->winGetWindowFromId(parent,
+	GameWindow *defaults = TheWindowManager->winGetWindowFromId(parent,
 		TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonDefaults"));
-	Int x = 20;
-	Int y = 540;
-	Int width = 150;
-	Int height = 26;
-	if (anchor)
+	GameWindow *accept = TheWindowManager->winGetWindowFromId(parent,
+		TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonAccept"));
+	GameWindow *back = TheWindowManager->winGetWindowFromId(parent,
+		TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonBack"));
+
+	if (!button)
 	{
-		anchor->winGetPosition(&x, &y);
-		anchor->winGetSize(&width, &height);
-		x -= width + 10;
-		if (x < 10)
-			x = 10;
+		WinInstanceData instanceData;
+		instanceData.init();
+		BitSet(instanceData.m_style, GWS_PUSH_BUTTON | GWS_MOUSE_TRACK);
+		instanceData.m_decoratedNameString = "OptionsMenu.wnd:ButtonKeyboardOptions";
+		instanceData.m_textLabelString = "GUI:KeyboardControls";
+		button = TheWindowManager->gogoGadgetPushButton(parent,
+			WIN_STATUS_ENABLED | WIN_STATUS_IMAGE | WIN_STATUS_TAB_STOP, 0, 0, 1, 1, &instanceData, nullptr, TRUE);
+		if (button)
+			button->winSetWindowId(buttonID);
 	}
 
-	WinInstanceData instanceData;
-	instanceData.init();
-	BitSet(instanceData.m_style, GWS_PUSH_BUTTON | GWS_MOUSE_TRACK);
-	instanceData.m_decoratedNameString = "OptionsMenu.wnd:ButtonKeyboardOptions";
-	instanceData.m_textLabelString = "GUI:KeyboardControls";
-	button = TheWindowManager->gogoGadgetPushButton(parent, WIN_STATUS_ENABLED | WIN_STATUS_IMAGE | WIN_STATUS_TAB_STOP,
-		x, y, width, height, &instanceData, nullptr, TRUE);
-	if (button)
+	if (!button)
+		return nullptr;
+
+	button->winHide(FALSE);
+	button->winEnable(TRUE);
+	GadgetButtonSetText(button, TheGameText->FETCH_OR_SUBSTITUTE("GUI:KeyboardControls", L"Keyboard Controls"));
+
+	Int rowLeft = 10;
+	Int rowY = 0;
+	Int rowWidth = 0;
+	Int rowHeight = 26;
+	Int gap = 6;
+	Bool hasRetailRow = defaults && accept && back;
+	if (hasRetailRow)
 	{
-		button->winSetWindowId(buttonID);
-		GadgetButtonSetText(button,
-			TheGameText->FETCH_OR_SUBSTITUTE("GUI:KeyboardControls", L"Keyboard Controls"));
+		Int x[3];
+		Int y[3];
+		Int width[3];
+		Int height[3];
+		GameWindow *retailButtons[3] = { defaults, accept, back };
+		for (Int i = 0; i < 3; ++i)
+		{
+			retailButtons[i]->winGetPosition(&x[i], &y[i]);
+			retailButtons[i]->winGetSize(&width[i], &height[i]);
+		}
+		rowLeft = x[0];
+		Int rowRight = x[0] + width[0];
+		Int totalButtonWidth = 0;
+		for (Int i = 0; i < 3; ++i)
+		{
+			if (x[i] < rowLeft)
+				rowLeft = x[i];
+			if (x[i] + width[i] > rowRight)
+				rowRight = x[i] + width[i];
+			totalButtonWidth += width[i];
+		}
+		rowY = y[0];
+		rowHeight = height[0];
+		rowWidth = rowRight - rowLeft;
+		const Int retailGap = (rowWidth - totalButtonWidth) / 2;
+		if (retailGap > 0)
+			gap = retailGap;
+		if (gap > 12)
+			gap = 12;
 	}
+	else
+	{
+		Int parentWidth = 0;
+		Int parentHeight = 0;
+		parent->winGetSize(&parentWidth, &parentHeight);
+		if (parentWidth > 20)
+			rowWidth = parentWidth - 20;
+		else
+		{
+			rowLeft = 0;
+			rowWidth = parentWidth;
+			gap = 0;
+		}
+		rowY = parentHeight > rowHeight + 10 ? parentHeight - rowHeight - 10 : 0;
+	}
+
+	Int buttonWidth = (rowWidth - gap * 3) / 4;
+	if (buttonWidth < 1)
+		buttonWidth = 1;
+	GameWindow *buttons[4] = { button, defaults, accept, back };
+	for (Int i = 0; i < 4; ++i)
+	{
+		if (buttons[i])
+		{
+			buttons[i]->winSetPosition(rowLeft + i * (buttonWidth + gap), rowY);
+			buttons[i]->winSetSize(buttonWidth, rowHeight);
+		}
+	}
+
 	return button;
 }
 

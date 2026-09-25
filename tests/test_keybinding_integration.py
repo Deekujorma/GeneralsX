@@ -104,6 +104,19 @@ class KeyBindingIntegrationTests(unittest.TestCase):
         self.assertIn("createKeyboardOptionsButton(parent)", options)
         self.assertIn('OptionsMenu.wnd:ButtonKeyboardOptions', options)
         self.assertIn('TheShell->push( "Menus/KeyboardOptionsMenu.wnd" )', options)
+        helper = options[options.index("static GameWindow *createKeyboardOptionsButton") : options.index("void OptionsMenuInit")]
+        self.assertNotIn("if (button)\n\t\treturn button;", helper)
+        self.assertIn("if (!button)", helper)
+        self.assertIn("gogoGadgetPushButton", helper)
+        self.assertIn("button->winHide(FALSE)", helper)
+        self.assertIn("button->winEnable(TRUE)", helper)
+        for control in ("ButtonDefaults", "ButtonAccept", "ButtonBack"):
+            self.assertIn(f'OptionsMenu.wnd:{control}', helper)
+        self.assertIn("winGetPosition", helper)
+        self.assertIn("winGetSize", helper)
+        self.assertIn("GameWindow *buttons[4] = { button, defaults, accept, back }", helper)
+        self.assertIn("buttons[i]->winSetPosition", helper)
+        self.assertIn("buttons[i]->winSetSize", helper)
         for deploy in ("scripts/build/linux/deploy-linux-zh.sh", "scripts/build/macos/deploy-macos-zh.sh"):
             self.assertIn("ExtrasMenu KeyboardOptionsMenu", (ROOT / deploy).read_text())
         self.assertIn("KeyboardOptionsMenu.wnd", (ROOT / "flatpak/com.fbraz3.GeneralsXZH.yml").read_text())
