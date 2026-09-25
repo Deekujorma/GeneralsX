@@ -123,6 +123,9 @@ extern void KeyboardOptionsMenuUpdate( WindowLayout *layout, void *userData );
 extern void KeyboardOptionsMenuShutdown( WindowLayout *layout, void *userData );
 extern WindowMsgHandledType KeyboardOptionsMenuSystem( GameWindow *window, UnsignedInt msg, WindowMsgData mData1, WindowMsgData mData2 );
 extern WindowMsgHandledType KeyboardOptionsMenuInput( GameWindow *window, UnsignedInt msg, WindowMsgData mData1, WindowMsgData mData2 );
+// GeneralsX @feature OpenAI 25/09/2026 Manage Keyboard Controls as a child of the separately owned Options layout.
+extern void ShowKeyboardOptionsMenu();
+extern void CloseKeyboardOptionsMenu();
 
 // Lan Lobby Menu ----------------------------------------------------------------------------------
 extern void LanLobbyMenuInit( WindowLayout *layout, void *userData );

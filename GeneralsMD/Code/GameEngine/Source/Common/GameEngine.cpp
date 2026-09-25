@@ -756,6 +756,8 @@ void GameEngine::init()
 #endif
 
 		TheMetaMap->generateMetaMap();
+		// GeneralsX @feature OpenAI 23/09/2026 Apply writable per-user bindings after retail and generated defaults.
+		TheMetaMap->initializeUserBindings();
 		TheMetaMap->verifyMetaMap();
 
 

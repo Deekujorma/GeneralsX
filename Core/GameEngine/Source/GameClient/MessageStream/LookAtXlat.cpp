@@ -45,6 +45,7 @@
 #include "GameClient/Shell.h"
 #include "GameClient/GameClient.h"
 #include "GameClient/KeyDefs.h"
+#include "GameClient/KeyBindingRules.h"
 #include "GameClient/View.h"
 #include "GameClient/Drawable.h"
 #include "GameClient/LookAtXlat.h"
@@ -63,7 +64,15 @@ enum
 	DIR_RIGHT
 };
 
-static Bool scrollDir[4] = { false, false, false, false };
+static HeldCameraPanState scrollDir;
+
+// GeneralsX @feature OpenAI 23/09/2026 Centralize held camera state cleanup.
+void LookAtTranslator::clearKeyboardScroll()
+{
+	scrollDir.clear();
+	if (m_isScrolling && m_scrollType == SCROLL_KEY)
+		stopScrolling();
+}
 
 // TheSuperHackers @tweak Introduces the SCROLL_MULTIPLIER for all scrolling to
 //
@@ -145,6 +154,8 @@ LookAtTranslator::LookAtTranslator() :
 	m_lastMouseMoveTimeMsec(0),
 	m_scrollType(SCROLL_NONE)
 {
+	// GeneralsX @bugfix OpenAI 23/09/2026 Never carry held camera state between translator lifetimes.
+	scrollDir.clear();
 	m_anchor.x = m_anchor.y = 0;
 	m_currentPos.x = m_currentPos.y = 0;
 	m_originalAnchor.x = m_originalAnchor.y = 0;
@@ -159,6 +170,7 @@ LookAtTranslator::LookAtTranslator() :
 //-----------------------------------------------------------------------------
 LookAtTranslator::~LookAtTranslator()
 {
+	scrollDir.clear();
 	if (TheLookAtTranslator == this)
 		TheLookAtTranslator = nullptr;
 }
@@ -206,32 +218,17 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage 
 	switch (t)
 	{
 		//-----------------------------------------------------------------------------
-		case GameMessage::MSG_RAW_KEY_DOWN:
-		case GameMessage::MSG_RAW_KEY_UP:
+		case GameMessage::MSG_META_CAMERA_PAN_UP:
+		case GameMessage::MSG_META_CAMERA_PAN_DOWN:
+		case GameMessage::MSG_META_CAMERA_PAN_LEFT:
+		case GameMessage::MSG_META_CAMERA_PAN_RIGHT:
 		{
-			// get key and state from args
-			UnsignedByte key		= msg->getArgument( 0 )->integer;
-			UnsignedByte state	= msg->getArgument( 1 )->integer;
-			Bool isPressed = !(BitIsSet( state, KEY_STATE_UP ));
+			const Bool isPressed = msg->getArgument(0)->integer != 0;
 
 			if (TheShell && TheShell->isShellActive())
 				break;
 
-			switch (key)
-			{
-			case KEY_UP:
-				scrollDir[DIR_UP] = isPressed;
-				break;
-			case KEY_DOWN:
-				scrollDir[DIR_DOWN] = isPressed;
-				break;
-			case KEY_LEFT:
-				scrollDir[DIR_LEFT] = isPressed;
-				break;
-			case KEY_RIGHT:
-				scrollDir[DIR_RIGHT] = isPressed;
-				break;
-			}
+			scrollDir.set(t - GameMessage::MSG_META_CAMERA_PAN_UP, isPressed);
 
 			if (TheInGameUI->isSelecting() || (m_isScrolling && m_scrollType != SCROLL_KEY))
 				break;
@@ -240,7 +237,7 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage 
 			Int numDirs = 0;
 			for (Int i=0; i<4; ++i)
 			{
-				if (scrollDir[i])
+				if (scrollDir.get(i))
 					numDirs++;
 			}
 
@@ -430,9 +427,16 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage 
 		case GameMessage::MSG_META_OPTIONS:
 		{
 			// stop the scrolling
-			stopScrolling();
+			clearKeyboardScroll();
 			// let the message drop through, cause we need to process this message for
 			// selection as well.
+			break;
+		}
+
+		case GameMessage::MSG_CLEAR_GAME_DATA:
+		case GameMessage::MSG_NEW_GAME:
+		{
+			clearKeyboardScroll();
 			break;
 		}
 
@@ -446,7 +450,7 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage 
 				// If we've been forced to stop scrolling (script action?)
 				TheInGameUI->setScrollAmount(offset);
 				TheTacticalView->scrollBy(&offset);
-				stopScrolling();
+				clearKeyboardScroll();
 			}
 			else if (m_isScrolling)
 			{
@@ -487,19 +491,19 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage 
 					break;
 				case SCROLL_KEY:
 					{
-						if (scrollDir[DIR_UP])
+						if (scrollDir.get(DIR_UP))
 						{
 							offset.y -= TheGlobalData->m_verticalScrollSpeedFactor * fpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
 						}
-						if (scrollDir[DIR_DOWN])
+						if (scrollDir.get(DIR_DOWN))
 						{
 							offset.y += TheGlobalData->m_verticalScrollSpeedFactor * fpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
 						}
-						if (scrollDir[DIR_LEFT])
+						if (scrollDir.get(DIR_LEFT))
 						{
 							offset.x -= TheGlobalData->m_horizontalScrollSpeedFactor * fpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
 						}
-						if (scrollDir[DIR_RIGHT])
+						if (scrollDir.get(DIR_RIGHT))
 						{
 							offset.x += TheGlobalData->m_horizontalScrollSpeedFactor * fpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
 						}
@@ -773,6 +777,8 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage 
 
 void LookAtTranslator::resetModes()
 {
+	// GeneralsX @bugfix OpenAI 23/09/2026 Input resets must release every configurable camera direction.
+	clearKeyboardScroll();
 	m_isScrolling = FALSE;
 	m_isRotating = FALSE;
 	m_isPitching = FALSE;

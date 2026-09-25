@@ -29,6 +29,7 @@
 
 #include "Common/SubsystemInterface.h"
 #include "GameClient/InGameUI.h"
+#include "GameClient/KeyBindingRules.h"
 
 
 enum MappableKeyCategories CPP_11(: Int)
@@ -346,6 +347,9 @@ public:
 	MappableKeyCategories		m_category;				///< This is the category the key falls under
 	UnicodeString						m_description;		///< The description string for the keys
 	UnicodeString						m_displayName;		///< The display name of our command
+	// GeneralsX @feature OpenAI 23/09/2026 Preserve immutable defaults separately from user overrides.
+	MappableKeyType					m_defaultKey;
+	MappableKeyModState			m_defaultModState;
 };
 EMPTY_DTOR(MetaMapRec)
 
@@ -357,6 +361,8 @@ private:
 
 	Int						m_lastKeyDown;	// really a MappableKeyType
 	Int						m_lastModState;	// really a MappableKeyModState
+	// GeneralsX @bugfix OpenAI 24/09/2026 Release only camera actions that were actually pressed.
+	ActiveCameraPanBindings m_activeCameraPans;
 
 	enum { NUM_MOUSE_BUTTONS = 3 };
 	ICoord2D m_mouseDownPosition[NUM_MOUSE_BUTTONS];
@@ -379,10 +385,16 @@ class MetaMap : public SubsystemInterface
 
 private:
 	MetaMapRec *m_metaMaps;
+	MetaMapRec *getLogicalPartner(const MetaMapRec *map);
+	const MetaMapRec *getLogicalPartner(const MetaMapRec *map) const;
+	MetaMapRec *getLogicalRepresentative(MetaMapRec *map);
+	const MetaMapRec *getLogicalRepresentative(const MetaMapRec *map) const;
+	Bool applyBinding(GameMessage::Type type, MappableKeyType key, MappableKeyModState modifiers, Bool replaceConflict);
 
 protected:
 	GameMessage::Type findGameMessageMetaType(const char* name);
 	MetaMapRec *getMetaMapRec(GameMessage::Type t);
+	const char *getMetaName(GameMessage::Type t) const;
 
 public:
 
@@ -400,6 +412,16 @@ public:
 	void generateMetaMap();
 
 	void verifyMetaMap();
+
+	// GeneralsX @feature OpenAI 23/09/2026 Share binding persistence and conflict handling between both games.
+	void initializeUserBindings();
+	Bool setBinding(GameMessage::Type type, MappableKeyType key, MappableKeyModState modifiers, Bool replaceConflict);
+	const MetaMapRec *findConflict(GameMessage::Type type, MappableKeyType key, MappableKeyModState modifiers) const;
+	void resetBinding(GameMessage::Type type);
+	void resetAllBindings();
+	Bool saveUserBindings() const;
+	MetaMapRec *getMutableMetaMapRec(GameMessage::Type type) { return getMetaMapRec(type); }
+	Bool isLogicalRepresentative(const MetaMapRec *map) const { return getLogicalRepresentative(map) == map; }
 
 	const MetaMapRec *getFirstMetaMapRec() const { return m_metaMaps; }
 };

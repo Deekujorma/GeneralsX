@@ -297,6 +297,8 @@ static FunctionLexicon::TableEntry winLayoutUpdateTable[] =
 
 	{ NAMEKEY_INVALID, "MainMenuUpdate",                  (void*)MainMenuUpdate },
 	{ NAMEKEY_INVALID, "OptionsMenuUpdate",               (void*)OptionsMenuUpdate },
+	// GeneralsX @bugfix OpenAI 25/09/2026 Register the update callback named by the keyboard-options layout.
+	{ NAMEKEY_INVALID, "KeyboardOptionsMenuUpdate",       (void*)KeyboardOptionsMenuUpdate },
 	{ NAMEKEY_INVALID, "SinglePlayerMenuUpdate",          (void*)SinglePlayerMenuUpdate },
 	{ NAMEKEY_INVALID, "MapSelectMenuUpdate",             (void*)MapSelectMenuUpdate },
 	{ NAMEKEY_INVALID, "LanLobbyMenuUpdate",              (void*)LanLobbyMenuUpdate },
