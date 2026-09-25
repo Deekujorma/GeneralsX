@@ -938,7 +938,7 @@ static void initLabelVersion()
 	}
 }
 
-// GeneralsX @bugfix OpenAI 25/09/2026 Reuse and reveal the retail keyboard-controls button in a derived four-button row.
+// GeneralsX @bugfix OpenAI 25/09/2026 Build a stable five-button row from retail geometry without cumulative reflow.
 static GameWindow *createKeyboardOptionsButton(GameWindow *parent)
 {
 	if (!parent)
@@ -952,6 +952,9 @@ static GameWindow *createKeyboardOptionsButton(GameWindow *parent)
 		TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonAccept"));
 	GameWindow *back = TheWindowManager->winGetWindowFromId(parent,
 		TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonBack"));
+	GameWindow *camera = TheWindowManager->winGetWindowFromId(parent,
+		TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonCameraHudOptions"));
+	const Bool rowAlreadyCreated = button && camera;
 
 	if (!button)
 	{
@@ -970,7 +973,6 @@ static GameWindow *createKeyboardOptionsButton(GameWindow *parent)
 		return nullptr;
 
 	const NameKeyType cameraID = TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonCameraHudOptions");
-	GameWindow *camera = TheWindowManager->winGetWindowFromId(parent, cameraID);
 	if (!camera)
 	{
 		WinInstanceData cameraData;
@@ -998,35 +1000,28 @@ static GameWindow *createKeyboardOptionsButton(GameWindow *parent)
 	Bool hasRetailRow = defaults && accept && back;
 	if (hasRetailRow)
 	{
-		Int x[3];
-		Int y[3];
-		Int width[3];
-		Int height[3];
-		GameWindow *retailButtons[3] = { defaults, accept, back };
-		for (Int i = 0; i < 3; ++i)
-		{
-			retailButtons[i]->winGetPosition(&x[i], &y[i]);
-			retailButtons[i]->winGetSize(&width[i], &height[i]);
-		}
-		rowLeft = x[0];
-		Int rowRight = x[0] + width[0];
+		GameWindow *sourceButtons[5] = { button, camera, defaults, accept, back };
+		const Int sourceCount = rowAlreadyCreated ? 5 : 3;
+		const Int sourceOffset = rowAlreadyCreated ? 0 : 2;
+		Int x = 0, y = 0, width = 0, height = 0;
+		sourceButtons[sourceOffset]->winGetPosition(&x, &y);
+		sourceButtons[sourceOffset]->winGetSize(&width, &height);
+		rowLeft = x;
+		Int rowRight = x + width;
 		Int totalButtonWidth = 0;
-		for (Int i = 0; i < 3; ++i)
+		for (Int i = 0; i < sourceCount; ++i)
 		{
-			if (x[i] < rowLeft)
-				rowLeft = x[i];
-			if (x[i] + width[i] > rowRight)
-				rowRight = x[i] + width[i];
-			totalButtonWidth += width[i];
+			GameWindow *source = sourceButtons[sourceOffset + i];
+			source->winGetPosition(&x, &y);
+			source->winGetSize(&width, &height);
+			rowLeft = MIN(rowLeft, x);
+			rowRight = MAX(rowRight, x + width);
+			totalButtonWidth += width;
+			if (i == 0) { rowY = y; rowHeight = height; }
 		}
-		rowY = y[0];
-		rowHeight = height[0];
 		rowWidth = rowRight - rowLeft;
-		const Int retailGap = (rowWidth - totalButtonWidth) / 2;
-		if (retailGap > 0)
-			gap = retailGap;
-		if (gap > 12)
-			gap = 12;
+		const Int derivedGap = sourceCount > 1 ? (rowWidth - totalButtonWidth) / (sourceCount - 1) : 0;
+		if (derivedGap > 0) gap = MIN(derivedGap, 12);
 	}
 	else
 	{

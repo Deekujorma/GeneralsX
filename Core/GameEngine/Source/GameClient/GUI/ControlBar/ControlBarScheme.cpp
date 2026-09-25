@@ -1072,10 +1072,7 @@ void ControlBarSchemeManager::drawForeground( ICoord2D offset )
 		Coord2D scaled = m_multiplier;
 		scaled.x *= TheGlobalData->m_controlBarScale;
 		scaled.y *= TheGlobalData->m_controlBarScale;
-		ICoord2D anchored = offset;
-		anchored.x = ScaleControlBarCoordinate(offset.x, TheDisplay->getWidth() / 2, TheGlobalData->m_controlBarScale);
-		anchored.y = ScaleControlBarCoordinate(offset.y, TheDisplay->getHeight(), TheGlobalData->m_controlBarScale);
-		m_currentScheme->drawForeground(scaled, anchored);
+		m_currentScheme->drawForeground(scaled, offset);
 	}
 }
 //-----------------------------------------------------------------------------
@@ -1086,10 +1083,7 @@ void ControlBarSchemeManager::drawBackground( ICoord2D offset )
 		Coord2D scaled = m_multiplier;
 		scaled.x *= TheGlobalData->m_controlBarScale;
 		scaled.y *= TheGlobalData->m_controlBarScale;
-		ICoord2D anchored = offset;
-		anchored.x = ScaleControlBarCoordinate(offset.x, TheDisplay->getWidth() / 2, TheGlobalData->m_controlBarScale);
-		anchored.y = ScaleControlBarCoordinate(offset.y, TheDisplay->getHeight(), TheGlobalData->m_controlBarScale);
-		m_currentScheme->drawBackground(scaled, anchored);
+		m_currentScheme->drawBackground(scaled, offset);
 	}
 }
 

@@ -228,10 +228,24 @@ void ControlBarResizer::captureCanonicalRecursive(GameWindow *window, Bool root)
 		captureCanonicalRecursive(child, FALSE);
 }
 
-void ControlBarResizer::captureCanonical(GameWindow *root)
+void ControlBarResizer::beginCanonicalCapture()
 {
 	clearCanonical();
-	captureCanonicalRecursive(root, TRUE);
+}
+
+void ControlBarResizer::captureCanonicalRoot(GameWindow *root)
+{
+	if (root)
+		captureCanonicalRecursive(root, TRUE);
+}
+
+void ControlBarResizer::restoreCanonical()
+{
+	for (CanonicalGeometryList::iterator it = m_canonicalGeometry.begin(); it != m_canonicalGeometry.end(); ++it)
+	{
+		it->window->winSetPosition(it->position.x, it->position.y);
+		it->window->winSetSize(it->size.x, it->size.y);
+	}
 }
 
 void ControlBarResizer::applyCanonicalScale(Real scale)

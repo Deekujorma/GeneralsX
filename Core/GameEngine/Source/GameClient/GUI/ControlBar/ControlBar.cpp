@@ -1301,7 +1301,7 @@ void ControlBar::init()
 		// GeneralsX @feature OpenAI 25/09/2026 Capture normal ControlBar windows; no proprietary Small scheme is required.
 		if(!m_controlBarResizer)
 			m_controlBarResizer = NEW ControlBarResizer;
-		m_controlBarResizer->captureCanonical(m_contextParent[ CP_MASTER ]);
+		captureCanonicalControlBarGeometry();
 		applyConfiguredControlBarScale();
 
 
@@ -2796,8 +2796,12 @@ void ControlBar::showRallyPoint(const Coord3D* loc)
 // ------------------------------------------------------------------------------------------------
 void ControlBar::setControlBarSchemeByPlayer(Player *p)
 {
+	// GeneralsX @bugfix OpenAI 25/09/2026 Never initialize a faction scheme on already-scaled window geometry.
+	restoreCanonicalControlBarGeometry();
 	if(m_controlBarSchemeManager)
 		m_controlBarSchemeManager->setControlBarSchemeByPlayer(p);
+	captureCanonicalControlBarGeometry();
+	applyConfiguredControlBarScale();
 
 	static NameKeyType buttonPlaceBeaconID = NAMEKEY( "ControlBar.wnd:ButtonPlaceBeacon" );
 	static NameKeyType buttonIdleWorkerID = NAMEKEY("ControlBar.wnd:ButtonIdleWorker");
@@ -2841,8 +2845,11 @@ void ControlBar::setControlBarSchemeByPlayer(Player *p)
 
 void ControlBar::setControlBarSchemeByPlayerTemplate( const PlayerTemplate *pt)
 {
+	restoreCanonicalControlBarGeometry();
 	if(m_controlBarSchemeManager)
 		m_controlBarSchemeManager->setControlBarSchemeByPlayerTemplate(pt);
+	captureCanonicalControlBarGeometry();
+	applyConfiguredControlBarScale();
 
 	static NameKeyType buttonPlaceBeaconID = NAMEKEY( "ControlBar.wnd:ButtonPlaceBeacon" );
 	static NameKeyType buttonIdleWorkerID = NAMEKEY("ControlBar.wnd:ButtonIdleWorker");
@@ -2888,10 +2895,12 @@ void ControlBar::setControlBarSchemeByPlayerTemplate( const PlayerTemplate *pt)
 
 void ControlBar::setControlBarSchemeByName(const AsciiString& name)
 {
+	restoreCanonicalControlBarGeometry();
 	if(m_controlBarSchemeManager)
-		m_controlBarSchemeManager->setControlBarScheme( name );
-		switchControlBarStage(CONTROL_BAR_STAGE_DEFAULT);
-
+		m_controlBarSchemeManager->setControlBarScheme(name);
+	captureCanonicalControlBarGeometry();
+	applyConfiguredControlBarScale();
+	switchControlBarStage(CONTROL_BAR_STAGE_DEFAULT);
 }
 
 void ControlBar::preloadAssets( TimeOfDay timeOfDay )
@@ -3267,6 +3276,8 @@ void ControlBar::updateRadarAttackGlow ()
 }
 void ControlBar::initSpecialPowershortcutBar( Player *player)
 {
+	// GeneralsX @bugfix OpenAI 25/09/2026 Restore before deleting a separately managed HUD root.
+	restoreCanonicalControlBarGeometry();
 	Int i = 0;
 	for( ; i < MAX_SPECIAL_POWER_SHORTCUTS; ++i )
 	{
@@ -3281,6 +3292,8 @@ void ControlBar::initSpecialPowershortcutBar( Player *player)
 		m_specialPowerLayout = nullptr;
 	}
 	m_specialPowerShortcutParent = nullptr;
+	captureCanonicalControlBarGeometry();
+	applyConfiguredControlBarScale();
 	m_currentlyUsedSpecialPowersButtons = 0;
 	const PlayerTemplate *pt = player->getPlayerTemplate();
 
@@ -3325,6 +3338,10 @@ void ControlBar::initSpecialPowershortcutBar( Player *player)
 		}
 	}
 
+	// GeneralsX @bugfix OpenAI 25/09/2026 Add the recreated shortcut layout without capturing scaled geometry.
+	restoreCanonicalControlBarGeometry();
+	captureCanonicalControlBarGeometry();
+	applyConfiguredControlBarScale();
 }
 
 void ControlBar::populateSpecialPowerShortcut( Player *player)
@@ -3860,12 +3877,32 @@ void ControlBar::setScaledViewportHeight()
 	TheTacticalView->setHeight(TheDisplay->getHeight() * effectiveScale);
 }
 
+void ControlBar::restoreCanonicalControlBarGeometry()
+{
+	if (m_controlBarResizer)
+		m_controlBarResizer->restoreCanonical();
+}
+
+void ControlBar::captureCanonicalControlBarGeometry()
+{
+	if (!m_controlBarResizer)
+		return;
+	m_controlBarResizer->beginCanonicalCapture();
+	m_controlBarResizer->captureCanonicalRoot(m_contextParent[ CP_MASTER ]);
+	// GeneralsX @bugfix OpenAI 25/09/2026 These layouts are separate battlefield-HUD roots.
+	m_controlBarResizer->captureCanonicalRoot(m_contextParent[ CP_PURCHASE_SCIENCE ]);
+	m_controlBarResizer->captureCanonicalRoot(m_specialPowerShortcutParent);
+}
+
 void ControlBar::applyConfiguredControlBarScale(Bool recapture)
 {
 	if (!m_controlBarResizer || !m_contextParent[ CP_MASTER ])
 		return;
 	if (recapture)
-		m_controlBarResizer->captureCanonical(m_contextParent[ CP_MASTER ]);
+	{
+		restoreCanonicalControlBarGeometry();
+		captureCanonicalControlBarGeometry();
+	}
 	m_controlBarResizer->applyCanonicalScale(TheGlobalData->m_controlBarScale);
 	if (m_currentControlBarStage == CONTROL_BAR_STAGE_DEFAULT)
 		setScaledViewportHeight();

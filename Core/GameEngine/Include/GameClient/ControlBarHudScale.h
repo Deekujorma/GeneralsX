@@ -18,6 +18,12 @@ inline Int ScaleControlBarExtent(Int value, Real scale)
 	return REAL_TO_INT(value * ClampControlBarScale(scale));
 }
 
+inline Int CalculateControlBarArtworkOffset(Int currentMarker, Int canonicalMarker, Real scale)
+{
+	// The marker has already moved with the scaled windows. Add only the canonical-origin correction.
+	return currentMarker - REAL_TO_INT(canonicalMarker * ClampControlBarScale(scale));
+}
+
 inline Real CalculateControlBarViewportScale(Real baseScale, Real hudScale)
 {
 	return 1.0f - (1.0f - baseScale) * ClampControlBarScale(hudScale);

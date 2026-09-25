@@ -92,7 +92,9 @@ public:
 	void sizeWindowsAlt();
 
 	// GeneralsX @feature OpenAI 25/09/2026 Scale from captured canonical geometry without cumulative drift.
-	void captureCanonical(GameWindow *root);
+	void beginCanonicalCapture();
+	void captureCanonicalRoot(GameWindow *root);
+	void restoreCanonical();
 	void applyCanonicalScale(Real scale);
 	void clearCanonical();
 

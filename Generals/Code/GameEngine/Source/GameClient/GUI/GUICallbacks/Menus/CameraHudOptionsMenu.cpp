@@ -65,9 +65,10 @@ static void applyStagedPreferences()
 	TheWritableGlobalData->m_controlBarScale = hud / 100.0f;
 	if (TheTacticalView)
 	{
+		// GeneralsX @bugfix OpenAI 25/09/2026 Clamp through the recalculated aspect-aware camera limits.
+		const Real currentHeight = TheTacticalView->getHeightAboveGround();
 		TheTacticalView->setCameraHeightAboveGroundLimitsToDefault();
-		if (TheTacticalView->getHeightAboveGround() > zoom)
-			TheTacticalView->setHeightAboveGround((Real)zoom);
+		TheTacticalView->setHeightAboveGround(currentHeight);
 	}
 	if (TheControlBar)
 		TheControlBar->applyConfiguredControlBarScale();

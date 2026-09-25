@@ -711,6 +711,8 @@ public:
 	void setScaledViewportHeight();
 	// GeneralsX @feature OpenAI 25/09/2026 Apply the persistent compact HUD geometry immediately.
 	void applyConfiguredControlBarScale(Bool recapture = FALSE);
+	void restoreCanonicalControlBarGeometry();
+	void captureCanonicalControlBarGeometry();
 
 	/// set the control bar to the proper scheme based off a player template that's passed in
 	ControlBarSchemeManager *getControlBarSchemeManager() { return m_controlBarSchemeManager; }
