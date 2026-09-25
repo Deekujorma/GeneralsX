@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Source-level integration checks for the legacy-engine keybinding wiring."""
 
+import re
 import unittest
 from pathlib import Path
 
@@ -98,6 +99,29 @@ class KeyBindingIntegrationTests(unittest.TestCase):
             self.assertEqual(LAYOUT.count(f'NAME = "KeyboardOptionsMenu.wnd:{control}";'), 1)
         lines = [line.strip() for line in LAYOUT.splitlines()]
         self.assertEqual(lines.count("WINDOW"), lines.count("END"))
+
+    def test_generalsx_keyboard_layout_uses_color_draw_paths(self):
+        controls = re.split(r"(?m)^\s*WINDOW\s*$", LAYOUT)[1:]
+        assign_entry = next(control for control in controls if 'NAME = "KeyboardOptionsMenu.wnd:TextEntryAssignHotkey";' in control)
+        assign_status = re.search(r"(?m)^\s*STATUS = ([^;]+);", assign_entry).group(1)
+        self.assertNotIn("IMAGE", assign_status.split("+"))
+        for control in controls:
+            status_match = re.search(r"(?m)^\s*STATUS = ([^;]+);", control)
+            if not status_match:
+                continue
+            images = re.findall(r"IMAGE:\s*([^,;]+)", control)
+            if images and all(image.strip() == "NoImage" for image in images):
+                self.assertNotIn("IMAGE", status_match.group(1).split("+"))
+
+    def test_keyboard_menu_compile_and_update_registration(self):
+        for game in ("Generals", "GeneralsMD"):
+            menu = (ROOT / game / "Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/KeyboardOptionsMenu.cpp").read_text()
+            lexicon = (ROOT / game / "Code/GameEngine/Source/Common/System/FunctionLexicon.cpp").read_text()
+            self.assertIn('#include "GameClient/GadgetPushButton.h"', menu)
+            self.assertIn('"KeyboardOptionsMenuUpdate",', lexicon)
+            self.assertIn("(void*)KeyboardOptionsMenuUpdate", lexicon)
+            self.assertIn("findRequiredControl", menu)
+            self.assertIn("Missing required control: %s", menu)
 
     def test_zero_hour_options_button_and_packaging_are_wired(self):
         options = (ROOT / "GeneralsMD/Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/OptionsMenu.cpp").read_text()

@@ -25,6 +25,7 @@
 #include "GameClient/GameWindowManager.h"
 #include "GameClient/GadgetComboBox.h"
 #include "GameClient/GadgetListBox.h"
+#include "GameClient/GadgetPushButton.h"
 #include "GameClient/GadgetStaticText.h"
 #include "GameClient/GadgetTextEntry.h"
 #include "GameClient/MessageBox.h"
@@ -48,6 +49,18 @@ static MappableKeyType s_capturedKey = MK_NONE;
 static MappableKeyModState s_capturedModifiers = NONE;
 static Bool s_hasCapture = false;
 static Bool s_suppressEscapeUp = false;
+
+// GeneralsX @bugfix OpenAI 25/09/2026 Report incomplete keyboard-options layouts instead of dereferencing missing controls.
+static GameWindow *findRequiredControl(const char *name)
+{
+	GameWindow *window = TheWindowManager->winGetWindowFromId(nullptr, TheNameKeyGenerator->nameToKey(name));
+	if (!window)
+	{
+		fprintf(stderr, "[KeyboardOptionsMenu] Missing required control: %s\n", name);
+		fflush(stderr);
+	}
+	return window;
+}
 
 static void clearPendingCapture()
 {
@@ -240,39 +253,51 @@ WindowMsgHandledType KeyboardTextEntryInput(GameWindow *window, UnsignedInt msg,
 
 void KeyboardOptionsMenuInit(WindowLayout *layout, void *)
 {
-	s_parent = TheWindowManager->winGetWindowFromId(nullptr, TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:ParentKeyboardOptionsMenu"));
+	clearPendingCapture();
+	s_suppressEscapeUp = false;
+	s_selected = nullptr;
 	s_backID = TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:ButtonBack");
 	s_categoryID = TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:ComboBoxCategoryList");
 	s_commandsID = TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:ListBoxCommandList");
 	s_resetAllID = TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:ButtonResetAll");
 	s_assignID = TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:ButtonAssign");
-	s_category = TheWindowManager->winGetWindowFromId(nullptr, s_categoryID);
-	s_commands = TheWindowManager->winGetWindowFromId(nullptr, s_commandsID);
-	s_description = TheWindowManager->winGetWindowFromId(nullptr, TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:StaticTextDescription"));
-	s_current = TheWindowManager->winGetWindowFromId(nullptr, TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:StaticTextCurrentHotkey"));
-	s_capture = TheWindowManager->winGetWindowFromId(nullptr, TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:TextEntryAssignHotkey"));
+	s_parent = findRequiredControl("KeyboardOptionsMenu.wnd:ParentKeyboardOptionsMenu");
+	s_category = findRequiredControl("KeyboardOptionsMenu.wnd:ComboBoxCategoryList");
+	s_commands = findRequiredControl("KeyboardOptionsMenu.wnd:ListBoxCommandList");
+	s_description = findRequiredControl("KeyboardOptionsMenu.wnd:StaticTextDescription");
+	s_current = findRequiredControl("KeyboardOptionsMenu.wnd:StaticTextCurrentHotkey");
+	s_capture = findRequiredControl("KeyboardOptionsMenu.wnd:TextEntryAssignHotkey");
+	GameWindow *labelTitle = findRequiredControl("KeyboardOptionsMenu.wnd:LabelTitle");
+	GameWindow *labelCategory = findRequiredControl("KeyboardOptionsMenu.wnd:LabelCategory");
+	GameWindow *labelCurrent = findRequiredControl("KeyboardOptionsMenu.wnd:LabelCurrentHotkey");
+	GameWindow *labelAssign = findRequiredControl("KeyboardOptionsMenu.wnd:LabelAssignHotkey");
+	GameWindow *buttonAssign = findRequiredControl("KeyboardOptionsMenu.wnd:ButtonAssign");
+	GameWindow *buttonResetAll = findRequiredControl("KeyboardOptionsMenu.wnd:ButtonResetAll");
+	GameWindow *buttonBack = findRequiredControl("KeyboardOptionsMenu.wnd:ButtonBack");
+	if (!layout || !s_parent || !s_category || !s_commands || !s_description || !s_current || !s_capture
+		|| !labelTitle || !labelCategory || !labelCurrent || !labelAssign || !buttonAssign || !buttonResetAll || !buttonBack)
+	{
+		if (layout)
+			layout->hide(true);
+		return;
+	}
+
 	s_capture->winSetInputFunc(KeyboardTextEntryInput);
 	// GeneralsX @feature OpenAI 24/09/2026 Localize the GeneralsX-owned layout with safe English fallbacks.
-	GadgetStaticTextSetText(TheWindowManager->winGetWindowFromId(nullptr,
-		TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:LabelTitle")),
+	GadgetStaticTextSetText(labelTitle,
 		TheGameText->FETCH_OR_SUBSTITUTE("GUI:KeyboardControls", L"Keyboard Controls"));
-	GadgetStaticTextSetText(TheWindowManager->winGetWindowFromId(nullptr,
-		TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:LabelCategory")),
+	GadgetStaticTextSetText(labelCategory,
 		TheGameText->FETCH_OR_SUBSTITUTE("GUI:Category", L"Category"));
-	GadgetStaticTextSetText(TheWindowManager->winGetWindowFromId(nullptr,
-		TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:LabelCurrentHotkey")),
+	GadgetStaticTextSetText(labelCurrent,
 		TheGameText->FETCH_OR_SUBSTITUTE("GUI:CurrentHotkey", L"Current Binding"));
-	GadgetStaticTextSetText(TheWindowManager->winGetWindowFromId(nullptr,
-		TheNameKeyGenerator->nameToKey("KeyboardOptionsMenu.wnd:LabelAssignHotkey")),
+	GadgetStaticTextSetText(labelAssign,
 		TheGameText->FETCH_OR_SUBSTITUTE("GUI:NewHotkey", L"New Binding"));
-	GadgetButtonSetText(TheWindowManager->winGetWindowFromId(nullptr, s_assignID),
+	GadgetButtonSetText(buttonAssign,
 		TheGameText->FETCH_OR_SUBSTITUTE("GUI:Assign", L"Assign"));
-	GadgetButtonSetText(TheWindowManager->winGetWindowFromId(nullptr, s_resetAllID),
+	GadgetButtonSetText(buttonResetAll,
 		TheGameText->FETCH_OR_SUBSTITUTE("GUI:ResetAll", L"Reset All"));
-	GadgetButtonSetText(TheWindowManager->winGetWindowFromId(nullptr, s_backID),
+	GadgetButtonSetText(buttonBack,
 		TheGameText->FETCH_OR_SUBSTITUTE("GUI:Back", L"Back"));
-	clearPendingCapture();
-	s_suppressEscapeUp = false;
 	GadgetComboBoxReset(s_category);
 	const Color white = GameMakeColor(255, 255, 255, 255);
 	for (Int i = 0; i < CATEGORY_NUM_CATEGORIES; ++i)
