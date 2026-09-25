@@ -174,7 +174,7 @@ fi
 
 # GeneralsX @build OpenAI 24/09/2026 Deploy GeneralsX-owned menu layouts so
 # TheFileSystem can load them as loose files ahead of BIG archives.
-for menu_name in ExtrasMenu KeyboardOptionsMenu; do
+for menu_name in ExtrasMenu KeyboardOptionsMenu CameraHudOptionsMenu; do
     MENU_WND_SRC="${PROJECT_ROOT}/GeneralsZH/Data/Window/Menus/${menu_name}.wnd"
     [[ -f "${MENU_WND_SRC}" ]] || continue
     mkdir -p "${RUNTIME_DIR}/Window/Menus"

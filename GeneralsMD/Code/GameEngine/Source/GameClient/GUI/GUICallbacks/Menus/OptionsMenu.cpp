@@ -938,7 +938,7 @@ static void initLabelVersion()
 	}
 }
 
-// GeneralsX @bugfix OpenAI 25/09/2026 Reuse and reveal the retail keyboard-controls button in a derived four-button row.
+// GeneralsX @bugfix OpenAI 25/09/2026 Build a stable five-button row from retail geometry without cumulative reflow.
 static GameWindow *createKeyboardOptionsButton(GameWindow *parent)
 {
 	if (!parent)
@@ -952,6 +952,9 @@ static GameWindow *createKeyboardOptionsButton(GameWindow *parent)
 		TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonAccept"));
 	GameWindow *back = TheWindowManager->winGetWindowFromId(parent,
 		TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonBack"));
+	GameWindow *camera = TheWindowManager->winGetWindowFromId(parent,
+		TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonCameraHudOptions"));
+	const Bool rowAlreadyCreated = button && camera;
 
 	if (!button)
 	{
@@ -969,6 +972,22 @@ static GameWindow *createKeyboardOptionsButton(GameWindow *parent)
 	if (!button)
 		return nullptr;
 
+	const NameKeyType cameraID = TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonCameraHudOptions");
+	if (!camera)
+	{
+		WinInstanceData cameraData;
+		cameraData.init();
+		BitSet(cameraData.m_style, GWS_PUSH_BUTTON | GWS_MOUSE_TRACK);
+		cameraData.m_decoratedNameString = "OptionsMenu.wnd:ButtonCameraHudOptions";
+		cameraData.m_textLabelString = "GUI:CameraHud";
+		camera = TheWindowManager->gogoGadgetPushButton(parent,
+			WIN_STATUS_ENABLED | WIN_STATUS_IMAGE | WIN_STATUS_TAB_STOP, 0, 0, 1, 1, &cameraData, nullptr, TRUE);
+		if (camera) camera->winSetWindowId(cameraID);
+	}
+	if (!camera) return nullptr;
+	camera->winHide(FALSE); camera->winEnable(TRUE);
+	GadgetButtonSetText(camera, TheGameText->FETCH_OR_SUBSTITUTE("GUI:CameraHud", L"Camera & HUD"));
+
 	button->winHide(FALSE);
 	button->winEnable(TRUE);
 	GadgetButtonSetText(button, TheGameText->FETCH_OR_SUBSTITUTE("GUI:KeyboardControls", L"Keyboard Controls"));
@@ -981,35 +1000,28 @@ static GameWindow *createKeyboardOptionsButton(GameWindow *parent)
 	Bool hasRetailRow = defaults && accept && back;
 	if (hasRetailRow)
 	{
-		Int x[3];
-		Int y[3];
-		Int width[3];
-		Int height[3];
-		GameWindow *retailButtons[3] = { defaults, accept, back };
-		for (Int i = 0; i < 3; ++i)
-		{
-			retailButtons[i]->winGetPosition(&x[i], &y[i]);
-			retailButtons[i]->winGetSize(&width[i], &height[i]);
-		}
-		rowLeft = x[0];
-		Int rowRight = x[0] + width[0];
+		GameWindow *sourceButtons[5] = { button, camera, defaults, accept, back };
+		const Int sourceCount = rowAlreadyCreated ? 5 : 3;
+		const Int sourceOffset = rowAlreadyCreated ? 0 : 2;
+		Int x = 0, y = 0, width = 0, height = 0;
+		sourceButtons[sourceOffset]->winGetPosition(&x, &y);
+		sourceButtons[sourceOffset]->winGetSize(&width, &height);
+		rowLeft = x;
+		Int rowRight = x + width;
 		Int totalButtonWidth = 0;
-		for (Int i = 0; i < 3; ++i)
+		for (Int i = 0; i < sourceCount; ++i)
 		{
-			if (x[i] < rowLeft)
-				rowLeft = x[i];
-			if (x[i] + width[i] > rowRight)
-				rowRight = x[i] + width[i];
-			totalButtonWidth += width[i];
+			GameWindow *source = sourceButtons[sourceOffset + i];
+			source->winGetPosition(&x, &y);
+			source->winGetSize(&width, &height);
+			rowLeft = MIN(rowLeft, x);
+			rowRight = MAX(rowRight, x + width);
+			totalButtonWidth += width;
+			if (i == 0) { rowY = y; rowHeight = height; }
 		}
-		rowY = y[0];
-		rowHeight = height[0];
 		rowWidth = rowRight - rowLeft;
-		const Int retailGap = (rowWidth - totalButtonWidth) / 2;
-		if (retailGap > 0)
-			gap = retailGap;
-		if (gap > 12)
-			gap = 12;
+		const Int derivedGap = sourceCount > 1 ? (rowWidth - totalButtonWidth) / (sourceCount - 1) : 0;
+		if (derivedGap > 0) gap = MIN(derivedGap, 12);
 	}
 	else
 	{
@@ -1027,11 +1039,11 @@ static GameWindow *createKeyboardOptionsButton(GameWindow *parent)
 		rowY = parentHeight > rowHeight + 10 ? parentHeight - rowHeight - 10 : 0;
 	}
 
-	Int buttonWidth = (rowWidth - gap * 3) / 4;
+	Int buttonWidth = (rowWidth - gap * 4) / 5;
 	if (buttonWidth < 1)
 		buttonWidth = 1;
-	GameWindow *buttons[4] = { button, defaults, accept, back };
-	for (Int i = 0; i < 4; ++i)
+	GameWindow *buttons[5] = { button, camera, defaults, accept, back };
+	for (Int i = 0; i < 5; ++i)
 	{
 		if (buttons[i])
 		{
@@ -1640,6 +1652,7 @@ WindowMsgHandledType OptionsMenuSystem( GameWindow *window, UnsignedInt msg,
 	static NameKeyType buttonAccept = NAMEKEY_INVALID;
 	static NameKeyType buttonReplayMenu = NAMEKEY_INVALID;
 	static NameKeyType buttonKeyboardOptionsMenu = NAMEKEY_INVALID;
+	static NameKeyType buttonCameraHudOptionsMenu = NAMEKEY_INVALID;
 
 	switch( msg )
 	{
@@ -1653,6 +1666,7 @@ WindowMsgHandledType OptionsMenuSystem( GameWindow *window, UnsignedInt msg,
 			buttonDefaults = TheNameKeyGenerator->nameToKey( "OptionsMenu.wnd:ButtonDefaults" );
 			buttonAccept = TheNameKeyGenerator->nameToKey( "OptionsMenu.wnd:ButtonAccept" );
 			buttonKeyboardOptionsMenu = TheNameKeyGenerator->nameToKey( "OptionsMenu.wnd:ButtonKeyboardOptions" );
+			buttonCameraHudOptionsMenu = TheNameKeyGenerator->nameToKey( "OptionsMenu.wnd:ButtonCameraHudOptions" );
 
 			break;
 
@@ -1767,6 +1781,10 @@ WindowMsgHandledType OptionsMenuSystem( GameWindow *window, UnsignedInt msg,
 			else if (controlID == ButtonAdvancedCancelID )
 			{
 				cancelAdvancedOptions();
+			}
+			else if ( controlID == buttonCameraHudOptionsMenu )
+			{
+				ShowCameraHudOptionsMenu();
 			}
 			else if ( controlID == buttonKeyboardOptionsMenu )
 			{

@@ -855,7 +855,8 @@ GlobalData::GlobalData()
 
 	m_particleEdit = FALSE;
 
-	m_viewportHeightScale = 0.80f; // Default value for the original Control Bar.
+	m_viewportHeightScale = 0.80f;
+	m_controlBarScale = 0.75f; // Default value for the original Control Bar.
 
 	m_cameraPitch = 0.0f;
 	m_cameraYaw = 0.0f;
@@ -1225,6 +1226,13 @@ void GlobalData::parseGameDataDefinition( INI* ini )
 	TheWritableGlobalData->m_saveCameraInReplay = optionPref.saveCameraInReplays();
 	TheWritableGlobalData->m_useCameraInReplay = optionPref.useCameraInReplays();
 	TheWritableGlobalData->m_enablePlayerObserver = optionPref.getPlayerObserverEnabled();
+
+	// GeneralsX @bugfix OpenAI 25/09/2026 Apply camera and client HUD preferences after every GameData override.
+	TheWritableGlobalData->m_maxCameraHeight = optionPref.getMaxCameraHeight();
+	TheWritableGlobalData->m_minCameraHeight = optionPref.getMinCameraHeight();
+	TheWritableGlobalData->m_cameraPitch = optionPref.getCameraPitch();
+	TheWritableGlobalData->m_terrainDrawDistanceScale = optionPref.getTerrainDrawDistanceScale();
+	TheWritableGlobalData->m_controlBarScale = optionPref.getControlBarScale();
 
 	TheWritableGlobalData->m_networkLatencyFontSize = optionPref.getNetworkLatencyFontSize();
 	TheWritableGlobalData->m_renderFpsFontSize = optionPref.getRenderFpsFontSize();

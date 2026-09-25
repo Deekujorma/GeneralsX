@@ -37,6 +37,7 @@
 #include "GameClient/InGameUI.h"
 #include "GameClient/Display.h"
 #include "GameClient/ControlBar.h"
+#include "GameClient/ControlBarHudScale.h"
 #include "GameClient/GameWindowManager.h"
 #include "GameClient/ControlBarScheme.h"
 #include "GameClient/MapUtil.h"
@@ -636,8 +637,9 @@ void W3DCommandBarBackgroundDraw( GameWindow *window, WinInstanceData *instData 
 	TheControlBar->getBackgroundMarkerPos(&basePos.x, &basePos.y);
 	ICoord2D pos, offset;
 	win->winGetScreenPosition(&pos.x,&pos.y);
-	offset.x = pos.x - basePos.x;
-	offset.y = pos.y - basePos.y;
+	// GeneralsX @bugfix OpenAI 25/09/2026 Transform the final artwork rectangle once; marker movement already contains HUD scaling.
+	offset.x = CalculateControlBarArtworkOffset(pos.x, basePos.x, TheGlobalData->m_controlBarScale);
+	offset.y = CalculateControlBarArtworkOffset(pos.y, basePos.y, TheGlobalData->m_controlBarScale);
 
 	man->drawBackground(offset);
 }
@@ -661,8 +663,8 @@ void W3DCommandBarForegroundDraw( GameWindow *window, WinInstanceData *instData 
 	TheControlBar->getForegroundMarkerPos(&basePos.x, &basePos.y);
 	ICoord2D pos, offset;
 	win->winGetScreenPosition(&pos.x,&pos.y);
-	offset.x = pos.x - basePos.x;
-	offset.y = pos.y - basePos.y;
+	offset.x = CalculateControlBarArtworkOffset(pos.x, basePos.x, TheGlobalData->m_controlBarScale);
+	offset.y = CalculateControlBarArtworkOffset(pos.y, basePos.y, TheGlobalData->m_controlBarScale);
 
 	man->drawForeground(offset);
 

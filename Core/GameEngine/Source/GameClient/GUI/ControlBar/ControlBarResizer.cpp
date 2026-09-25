@@ -55,6 +55,7 @@
 #include "GameClient/GameWindow.h"
 #include "GameClient/GameWindowManager.h"
 #include "GameClient/Display.h"
+#include "GameClient/ControlBarHudScale.h"
 //-----------------------------------------------------------------------------
 // DEFINES ////////////////////////////////////////////////////////////////////
 //-----------------------------------------------------------------------------
@@ -203,6 +204,63 @@ void ControlBarResizer::sizeWindowsAlt()
 			win->winSetSize(rWin->m_altSize.x *x, rWin->m_altSize.y *y);
 		DEBUG_LOG(("sizeWindowsAlt:%s pos X:%d pos Y: %d size X:%d sizeY: %d",rWin->m_name.str(), rWin->m_altPos.x*x, rWin->m_altPos.y*y,rWin->m_altSize.x*x, rWin->m_altSize.y *y));
 		it ++;
+	}
+}
+
+
+// GeneralsX @feature OpenAI 25/09/2026 Capture each window once and always transform from that canonical geometry.
+void ControlBarResizer::clearCanonical()
+{
+	m_canonicalGeometry.clear();
+}
+
+void ControlBarResizer::captureCanonicalRecursive(GameWindow *window, Bool root)
+{
+	if (!window)
+		return;
+	CanonicalWindowGeometry geometry;
+	geometry.window = window;
+	window->winGetPosition(&geometry.position.x, &geometry.position.y);
+	window->winGetSize(&geometry.size.x, &geometry.size.y);
+	geometry.root = root;
+	m_canonicalGeometry.push_back(geometry);
+	for (GameWindow *child = window->winGetChild(); child; child = child->winGetNext())
+		captureCanonicalRecursive(child, FALSE);
+}
+
+void ControlBarResizer::beginCanonicalCapture()
+{
+	clearCanonical();
+}
+
+void ControlBarResizer::captureCanonicalRoot(GameWindow *root)
+{
+	if (root)
+		captureCanonicalRecursive(root, TRUE);
+}
+
+void ControlBarResizer::restoreCanonical()
+{
+	for (CanonicalGeometryList::iterator it = m_canonicalGeometry.begin(); it != m_canonicalGeometry.end(); ++it)
+	{
+		it->window->winSetPosition(it->position.x, it->position.y);
+		it->window->winSetSize(it->size.x, it->size.y);
+	}
+}
+
+void ControlBarResizer::applyCanonicalScale(Real scale)
+{
+	if (!TheDisplay)
+		return;
+	scale = ClampControlBarScale(scale);
+	const Int pivotX = TheDisplay->getWidth() / 2;
+	const Int pivotY = TheDisplay->getHeight();
+	for (CanonicalGeometryList::iterator it = m_canonicalGeometry.begin(); it != m_canonicalGeometry.end(); ++it)
+	{
+		Int x = it->root ? ScaleControlBarCoordinate(it->position.x, pivotX, scale) : ScaleControlBarExtent(it->position.x, scale);
+		Int y = it->root ? ScaleControlBarCoordinate(it->position.y, pivotY, scale) : ScaleControlBarExtent(it->position.y, scale);
+		it->window->winSetPosition(x, y);
+		it->window->winSetSize(ScaleControlBarExtent(it->size.x, scale), ScaleControlBarExtent(it->size.y, scale));
 	}
 }
 

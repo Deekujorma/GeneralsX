@@ -893,7 +893,7 @@ Real OptionPreferences::getMaxCameraHeight() const
 {
 	OptionPreferences::const_iterator it = find("MaxCameraHeight");
 	if (it == end())
-		return TheGlobalData->m_maxCameraHeight;
+		return 750.0f;
 
 	Real val = (Real)atof(it->second.str());
 	if (val < 100.0f)
@@ -935,7 +935,7 @@ Real OptionPreferences::getTerrainDrawDistanceScale() const
 {
 	OptionPreferences::const_iterator it = find("TerrainDrawDistanceScale");
 	if (it == end())
-		return TheGlobalData->m_terrainDrawDistanceScale;
+		return 1.25f;
 
 	Real val = (Real)atof(it->second.str());
 	if (val < 1.0f)
@@ -943,6 +943,17 @@ Real OptionPreferences::getTerrainDrawDistanceScale() const
 	if (val > 2.0f)
 		val = 2.0f;
 	return val;
+}
+
+// GeneralsX @feature OpenAI 25/09/2026 Keep HUD sizing local, persistent, and safely bounded.
+Real OptionPreferences::getControlBarScale() const
+{
+	OptionPreferences::const_iterator it = find("ControlBarScale");
+	if (it == end())
+		return 0.75f;
+
+	Real val = (Real)atof(it->second.str());
+	return clamp(0.60f, val, 1.00f);
 }
 
 Real OptionPreferences::getGameWindowTransitionSpeedMultiplier() const

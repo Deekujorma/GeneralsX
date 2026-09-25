@@ -224,7 +224,7 @@ class KeyBindingIntegrationTests(unittest.TestCase):
             self.assertIn(f'OptionsMenu.wnd:{control}', helper)
         self.assertIn("winGetPosition", helper)
         self.assertIn("winGetSize", helper)
-        self.assertIn("GameWindow *buttons[4] = { button, defaults, accept, back }", helper)
+        self.assertIn("GameWindow *buttons[5] = { button, camera, defaults, accept, back }", helper)
         self.assertIn("buttons[i]->winSetPosition", helper)
         self.assertIn("buttons[i]->winSetSize", helper)
         for deploy in ("scripts/build/linux/deploy-linux-zh.sh", "scripts/build/macos/deploy-macos-zh.sh"):

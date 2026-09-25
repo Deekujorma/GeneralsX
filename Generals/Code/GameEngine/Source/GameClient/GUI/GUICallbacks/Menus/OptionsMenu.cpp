@@ -888,6 +888,122 @@ static void cancelAdvancedOptions()
 	WinAdvancedDisplay->winHide(TRUE);
 }
 
+static GameWindow *createKeyboardOptionsButton(GameWindow *parent)
+{
+	if (!parent)
+		return nullptr;
+
+	const NameKeyType buttonID = TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonKeyboardOptions");
+	GameWindow *button = TheWindowManager->winGetWindowFromId(parent, buttonID);
+	GameWindow *defaults = TheWindowManager->winGetWindowFromId(parent,
+		TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonDefaults"));
+	GameWindow *accept = TheWindowManager->winGetWindowFromId(parent,
+		TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonAccept"));
+	GameWindow *back = TheWindowManager->winGetWindowFromId(parent,
+		TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonBack"));
+	GameWindow *camera = TheWindowManager->winGetWindowFromId(parent,
+		TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonCameraHudOptions"));
+	const Bool rowAlreadyCreated = button && camera;
+
+	if (!button)
+	{
+		WinInstanceData instanceData;
+		instanceData.init();
+		BitSet(instanceData.m_style, GWS_PUSH_BUTTON | GWS_MOUSE_TRACK);
+		instanceData.m_decoratedNameString = "OptionsMenu.wnd:ButtonKeyboardOptions";
+		instanceData.m_textLabelString = "GUI:KeyboardControls";
+		button = TheWindowManager->gogoGadgetPushButton(parent,
+			WIN_STATUS_ENABLED | WIN_STATUS_IMAGE | WIN_STATUS_TAB_STOP, 0, 0, 1, 1, &instanceData, nullptr, TRUE);
+		if (button)
+			button->winSetWindowId(buttonID);
+	}
+
+	if (!button)
+		return nullptr;
+
+	const NameKeyType cameraID = TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonCameraHudOptions");
+	if (!camera)
+	{
+		WinInstanceData cameraData;
+		cameraData.init();
+		BitSet(cameraData.m_style, GWS_PUSH_BUTTON | GWS_MOUSE_TRACK);
+		cameraData.m_decoratedNameString = "OptionsMenu.wnd:ButtonCameraHudOptions";
+		cameraData.m_textLabelString = "GUI:CameraHud";
+		camera = TheWindowManager->gogoGadgetPushButton(parent,
+			WIN_STATUS_ENABLED | WIN_STATUS_IMAGE | WIN_STATUS_TAB_STOP, 0, 0, 1, 1, &cameraData, nullptr, TRUE);
+		if (camera) camera->winSetWindowId(cameraID);
+	}
+	if (!camera) return nullptr;
+	camera->winHide(FALSE); camera->winEnable(TRUE);
+	GadgetButtonSetText(camera, TheGameText->FETCH_OR_SUBSTITUTE("GUI:CameraHud", L"Camera & HUD"));
+
+	button->winHide(FALSE);
+	button->winEnable(TRUE);
+	GadgetButtonSetText(button, TheGameText->FETCH_OR_SUBSTITUTE("GUI:KeyboardControls", L"Keyboard Controls"));
+
+	Int rowLeft = 10;
+	Int rowY = 0;
+	Int rowWidth = 0;
+	Int rowHeight = 26;
+	Int gap = 6;
+	Bool hasRetailRow = defaults && accept && back;
+	if (hasRetailRow)
+	{
+		GameWindow *sourceButtons[5] = { button, camera, defaults, accept, back };
+		const Int sourceCount = rowAlreadyCreated ? 5 : 3;
+		const Int sourceOffset = rowAlreadyCreated ? 0 : 2;
+		Int x = 0, y = 0, width = 0, height = 0;
+		sourceButtons[sourceOffset]->winGetPosition(&x, &y);
+		sourceButtons[sourceOffset]->winGetSize(&width, &height);
+		rowLeft = x;
+		Int rowRight = x + width;
+		Int totalButtonWidth = 0;
+		for (Int i = 0; i < sourceCount; ++i)
+		{
+			GameWindow *source = sourceButtons[sourceOffset + i];
+			source->winGetPosition(&x, &y);
+			source->winGetSize(&width, &height);
+			rowLeft = MIN(rowLeft, x);
+			rowRight = MAX(rowRight, x + width);
+			totalButtonWidth += width;
+			if (i == 0) { rowY = y; rowHeight = height; }
+		}
+		rowWidth = rowRight - rowLeft;
+		const Int derivedGap = sourceCount > 1 ? (rowWidth - totalButtonWidth) / (sourceCount - 1) : 0;
+		if (derivedGap > 0) gap = MIN(derivedGap, 12);
+	}
+	else
+	{
+		Int parentWidth = 0;
+		Int parentHeight = 0;
+		parent->winGetSize(&parentWidth, &parentHeight);
+		if (parentWidth > 20)
+			rowWidth = parentWidth - 20;
+		else
+		{
+			rowLeft = 0;
+			rowWidth = parentWidth;
+			gap = 0;
+		}
+		rowY = parentHeight > rowHeight + 10 ? parentHeight - rowHeight - 10 : 0;
+	}
+
+	Int buttonWidth = (rowWidth - gap * 4) / 5;
+	if (buttonWidth < 1)
+		buttonWidth = 1;
+	GameWindow *buttons[5] = { button, camera, defaults, accept, back };
+	for (Int i = 0; i < 5; ++i)
+	{
+		if (buttons[i])
+		{
+			buttons[i]->winSetPosition(rowLeft + i * (buttonWidth + gap), rowY);
+			buttons[i]->winSetSize(buttonWidth, rowHeight);
+		}
+	}
+
+	return button;
+}
+
 // TheSuperHackers @tweak Now prints additional version information in the version label.
 static void initLabelVersion()
 {
@@ -1359,6 +1475,7 @@ void OptionsMenuInit( WindowLayout *layout, void *userData )
 	// set keyboard focus to main parent
 	NameKeyType parentID = TheNameKeyGenerator->nameToKey( "OptionsMenu.wnd:OptionsMenuParent" );
 	GameWindow *parent = TheWindowManager->winGetWindowFromId( nullptr, parentID );
+	createKeyboardOptionsButton(parent);
 	TheWindowManager->winSetFocus( parent );
 
 	// GeneralsX @bugfix fbraz3 12/09/2026 Only disable controls when actually in-game or in an online staging room
@@ -1491,6 +1608,7 @@ WindowMsgHandledType OptionsMenuSystem( GameWindow *window, UnsignedInt msg,
 	static NameKeyType buttonAccept = NAMEKEY_INVALID;
 	static NameKeyType buttonReplayMenu = NAMEKEY_INVALID;
 	static NameKeyType buttonKeyboardOptionsMenu = NAMEKEY_INVALID;
+	static NameKeyType buttonCameraHudOptionsMenu = NAMEKEY_INVALID;
 
 	switch( msg )
 	{
@@ -1504,6 +1622,7 @@ WindowMsgHandledType OptionsMenuSystem( GameWindow *window, UnsignedInt msg,
 			buttonDefaults = TheNameKeyGenerator->nameToKey( "OptionsMenu.wnd:ButtonDefaults" );
 			buttonAccept = TheNameKeyGenerator->nameToKey( "OptionsMenu.wnd:ButtonAccept" );
 			buttonKeyboardOptionsMenu = TheNameKeyGenerator->nameToKey( "OptionsMenu.wnd:ButtonKeyboardOptions" );
+			buttonCameraHudOptionsMenu = TheNameKeyGenerator->nameToKey( "OptionsMenu.wnd:ButtonCameraHudOptions" );
 
 			break;
 
@@ -1618,6 +1737,10 @@ WindowMsgHandledType OptionsMenuSystem( GameWindow *window, UnsignedInt msg,
 			else if (controlID == ButtonAdvancedCancelID )
 			{
 				cancelAdvancedOptions();
+			}
+			else if ( controlID == buttonCameraHudOptionsMenu )
+			{
+				ShowCameraHudOptionsMenu();
 			}
 			else if ( controlID == buttonKeyboardOptionsMenu )
 			{

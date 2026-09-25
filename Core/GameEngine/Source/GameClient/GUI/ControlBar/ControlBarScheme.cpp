@@ -57,6 +57,7 @@
 #include "Common/PlayerTemplate.h"
 #include "Common/Recorder.h"
 #include "GameClient/ControlBarScheme.h"
+#include "GameClient/ControlBarHudScale.h"
 #include "GameClient/Display.h"
 #include "GameClient/ControlBar.h"
 #include "GameClient/Image.h"
@@ -1066,13 +1067,24 @@ void ControlBarSchemeManager::update()
 void ControlBarSchemeManager::drawForeground( ICoord2D offset )
 {
 	if(m_currentScheme)
-		m_currentScheme->drawForeground( m_multiplier, offset);
+	{
+		// GeneralsX @feature OpenAI 25/09/2026 Match scheme artwork to the bottom-centred window transform.
+		Coord2D scaled = m_multiplier;
+		scaled.x *= TheGlobalData->m_controlBarScale;
+		scaled.y *= TheGlobalData->m_controlBarScale;
+		m_currentScheme->drawForeground(scaled, offset);
+	}
 }
 //-----------------------------------------------------------------------------
 void ControlBarSchemeManager::drawBackground( ICoord2D offset )
 {
 	if(m_currentScheme)
-		m_currentScheme->drawBackground( m_multiplier, offset );
+	{
+		Coord2D scaled = m_multiplier;
+		scaled.x *= TheGlobalData->m_controlBarScale;
+		scaled.y *= TheGlobalData->m_controlBarScale;
+		m_currentScheme->drawBackground(scaled, offset);
+	}
 }
 
 //-----------------------------------------------------------------------------
