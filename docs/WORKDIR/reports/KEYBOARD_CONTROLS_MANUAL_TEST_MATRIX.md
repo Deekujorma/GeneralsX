@@ -6,7 +6,7 @@ Validate both Generals and Zero Hour on Linux, Linux Flatpak, macOS, and Windows
 
 ## Matrix
 
-1. Open the retail Options screen, confirm the injected Keyboard Controls button is visible, and verify the list opens at the Camera Controls section with readable section headers and a clearly highlighted selected action.
+1. Open the retail Options screen, confirm the injected Keyboard Controls button is visible, and verify the 20px list opens at Camera Controls with readable section headers and a blue/gold highlight covering only the selected row, not the whole list.
 2. Rebind Camera Pan Up/Left/Down/Right to W/A/S/D in Keyboard Options, accepting conflicts when prompted.
 3. Hold and release each direction repeatedly, including rapid press/release cycles.
 4. Verify W+A, W+D, S+A, and S+D diagonal scrolling.

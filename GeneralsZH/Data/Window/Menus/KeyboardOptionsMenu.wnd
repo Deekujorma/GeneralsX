@@ -100,7 +100,7 @@ WINDOW
     INPUTCALLBACK = "[None]";
     TOOLTIPCALLBACK = "[None]";
     DRAWCALLBACK = "[None]";
-    FONT = NAME: "Arial", SIZE: 11, BOLD: 0;
+    FONT = NAME: "Arial", SIZE: 16, BOLD: 0;
     HEADERTEMPLATE = "[NONE]";
     TOOLTIPDELAY = -1;
     TEXT = "GUI:Action";
@@ -144,7 +144,7 @@ WINDOW
     INPUTCALLBACK = "[None]";
     TOOLTIPCALLBACK = "[None]";
     DRAWCALLBACK = "[None]";
-    FONT = NAME: "Arial", SIZE: 11, BOLD: 0;
+    FONT = NAME: "Arial", SIZE: 16, BOLD: 0;
     HEADERTEMPLATE = "[NONE]";
     TOOLTIPDELAY = -1;
     TEXT = "GUI:Binding";
@@ -188,7 +188,7 @@ WINDOW
     INPUTCALLBACK = "[None]";
     TOOLTIPCALLBACK = "[None]";
     DRAWCALLBACK = "[None]";
-    FONT = NAME: "Arial", SIZE: 13, BOLD: 0;
+    FONT = NAME: "Arial", SIZE: 20, BOLD: 0;
     HEADERTEMPLATE = "[NONE]";
     TOOLTIPDELAY = -1;
     TEXTCOLOR = ENABLED: 255 255 255 255, ENABLEDBORDER: 0 0 0 255, DISABLED: 160 160 160 255, DISABLEDBORDER: 0 0 0 255, HILITE: 255 255 80 255, HILITEBORDER: 0 0 0 255;
@@ -211,7 +211,7 @@ WINDOW
                       IMAGE: NoImage, COLOR: 255 255 255 0, BORDERCOLOR: 180 180 180 255,
                       IMAGE: NoImage, COLOR: 255 255 255 0, BORDERCOLOR: 180 180 180 255,
                       IMAGE: NoImage, COLOR: 255 255 255 0, BORDERCOLOR: 180 180 180 255;
-    HILITEDRAWDATA = IMAGE: NoImage, COLOR: 28 62 96 235, BORDERCOLOR: 180 180 180 255,
+    HILITEDRAWDATA = IMAGE: NoImage, COLOR: 12 20 36 220, BORDERCOLOR: 180 180 180 255,
                       IMAGE: NoImage, COLOR: 50 125 195 255, BORDERCOLOR: 255 225 100 255,
                       IMAGE: NoImage, COLOR: 50 125 195 255, BORDERCOLOR: 255 225 100 255,
                       IMAGE: NoImage, COLOR: 50 125 195 255, BORDERCOLOR: 255 225 100 255,
@@ -339,7 +339,7 @@ WINDOW
     INPUTCALLBACK = "[None]";
     TOOLTIPCALLBACK = "[None]";
     DRAWCALLBACK = "[None]";
-    FONT = NAME: "Arial", SIZE: 11, BOLD: 0;
+    FONT = NAME: "Arial", SIZE: 15, BOLD: 0;
     HEADERTEMPLATE = "[NONE]";
     TOOLTIPDELAY = -1;
     TEXT = "GUI:KeyboardSelectAction";
@@ -383,7 +383,7 @@ WINDOW
     INPUTCALLBACK = "[None]";
     TOOLTIPCALLBACK = "[None]";
     DRAWCALLBACK = "[None]";
-    FONT = NAME: "Arial", SIZE: 11, BOLD: 0;
+    FONT = NAME: "Arial", SIZE: 14, BOLD: 0;
     HEADERTEMPLATE = "[NONE]";
     TOOLTIPDELAY = -1;
     TEXT = "GUI:ChangeBinding";
@@ -426,7 +426,7 @@ WINDOW
     INPUTCALLBACK = "[None]";
     TOOLTIPCALLBACK = "[None]";
     DRAWCALLBACK = "[None]";
-    FONT = NAME: "Arial", SIZE: 11, BOLD: 0;
+    FONT = NAME: "Arial", SIZE: 14, BOLD: 0;
     HEADERTEMPLATE = "[NONE]";
     TOOLTIPDELAY = -1;
     TEXT = "GUI:Clear";
@@ -469,7 +469,7 @@ WINDOW
     INPUTCALLBACK = "[None]";
     TOOLTIPCALLBACK = "[None]";
     DRAWCALLBACK = "[None]";
-    FONT = NAME: "Arial", SIZE: 11, BOLD: 0;
+    FONT = NAME: "Arial", SIZE: 14, BOLD: 0;
     HEADERTEMPLATE = "[NONE]";
     TOOLTIPDELAY = -1;
     TEXT = "GUI:ResetSelected";
@@ -512,7 +512,7 @@ WINDOW
     INPUTCALLBACK = "[None]";
     TOOLTIPCALLBACK = "[None]";
     DRAWCALLBACK = "[None]";
-    FONT = NAME: "Arial", SIZE: 11, BOLD: 0;
+    FONT = NAME: "Arial", SIZE: 14, BOLD: 0;
     HEADERTEMPLATE = "[NONE]";
     TOOLTIPDELAY = -1;
     TEXT = "GUI:ResetAll";
@@ -555,7 +555,7 @@ WINDOW
     INPUTCALLBACK = "[None]";
     TOOLTIPCALLBACK = "[None]";
     DRAWCALLBACK = "[None]";
-    FONT = NAME: "Arial", SIZE: 11, BOLD: 0;
+    FONT = NAME: "Arial", SIZE: 14, BOLD: 0;
     HEADERTEMPLATE = "[NONE]";
     TOOLTIPDELAY = -1;
     TEXT = "GUI:Back";

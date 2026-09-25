@@ -575,7 +575,8 @@ void W3DGadgetListBoxDraw( GameWindow *window, WinInstanceData *instData )
 	}
 
 	// draw the text
-	drawListBoxText( window, instData, x, y + 4 , width, height-4, TRUE );
+	// GeneralsX @bugfix OpenAI 25/09/2026 Colored list boxes must render selected rows from their color slots, not selection images.
+	drawListBoxText( window, instData, x, y + 4 , width, height-4, FALSE );
 
 
 
@@ -668,4 +669,3 @@ void W3DGadgetListBoxImageDraw( GameWindow *window, WinInstanceData *instData )
 
 
 }
-

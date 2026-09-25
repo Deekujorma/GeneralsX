@@ -10,6 +10,7 @@ META = (ROOT / "Core/GameEngine/Source/GameClient/MessageStream/MetaEvent.cpp").
 LOOK = (ROOT / "Core/GameEngine/Source/GameClient/MessageStream/LookAtXlat.cpp").read_text()
 HEADER = (ROOT / "Core/GameEngine/Include/GameClient/MetaEvent.h").read_text()
 LAYOUT = (ROOT / "GeneralsZH/Data/Window/Menus/KeyboardOptionsMenu.wnd").read_text()
+W3D_LISTBOX = (ROOT / "Core/GameEngineDevice/Source/W3DDevice/GameClient/GUI/Gadget/W3DListBox.cpp").read_text()
 
 
 class KeyBindingIntegrationTests(unittest.TestCase):
@@ -156,10 +157,21 @@ class KeyBindingIntegrationTests(unittest.TestCase):
     def test_list_readability_and_selection_highlight(self):
         listbox = LAYOUT[LAYOUT.index('NAME = "KeyboardOptionsMenu.wnd:ListBoxCommandList";'):
                          LAYOUT.index("  END", LAYOUT.index('NAME = "KeyboardOptionsMenu.wnd:ListBoxCommandList";'))]
-        self.assertIn('FONT = NAME: "Arial", SIZE: 13', listbox)
+        self.assertIn('FONT = NAME: "Arial", SIZE: 20', listbox)
+        self.assertIn("ENABLED+MOUSETRACK", listbox)
+        self.assertNotIn("ENABLED+IMAGE", listbox)
+        self.assertIn("HILITEDRAWDATA = IMAGE: NoImage, COLOR: 12 20 36 220", listbox)
         self.assertIn("COLOR: 35 100 165 255, BORDERCOLOR: 255 210 80 255", listbox)
         self.assertIn("COLOR: 50 125 195 255, BORDERCOLOR: 255 225 100 255", listbox)
         self.assertIn("SCROLLBAR: 1", listbox)
+
+    def test_colored_listbox_uses_color_selection_renderer(self):
+        colored = W3D_LISTBOX[W3D_LISTBOX.index("void W3DGadgetListBoxDraw"):
+                              W3D_LISTBOX.index("void W3DGadgetListBoxImageDraw")]
+        image = W3D_LISTBOX[W3D_LISTBOX.index("void W3DGadgetListBoxImageDraw"):]
+        self.assertIn("drawListBoxText( window, instData, x, y + 4 , width, height-4, FALSE )", colored)
+        self.assertNotIn("height-4, TRUE", colored)
+        self.assertIn("drawListBoxText( window, instData, x, y+4, width, height-4, TRUE )", image)
 
     def test_keyboard_menu_is_an_options_subpage_not_a_shell_screen(self):
         options = (ROOT / "GeneralsMD/Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/OptionsMenu.cpp").read_text()
